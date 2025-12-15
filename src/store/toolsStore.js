@@ -9,7 +9,7 @@ export const useToolsStore = defineStore('tools', () => {
   const toolsList = ref([])
   const categories = ref([])
   const user = ref({
-    isLogin: false,
+    isLogin: true,
     avatar: 'https://ui-avatars.com/api/?name=Guest',
     name: '访客用户',
     email: '',
@@ -28,7 +28,7 @@ export const useToolsStore = defineStore('tools', () => {
   const searchResults = ref([])
   const activeFilters = ref({
     tags: [],
-    sort: '最新'
+    sort: '最多浏览'
   })
 
   const currentToolDetail = ref(null)
@@ -255,6 +255,21 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
+  // 筛选工具信息更新
+  // 1. 排序方式
+  const toggleSort = (sort) => {
+    activeFilters.value.sort = sort
+  }
+  // 2. 标签
+  const toggleTag = (tag) => {
+    const index = activeFilters.value.tags.indexOf(tag)
+    if (index > -1) {
+      activeFilters.value.tags.splice(index, 1)
+    } else {
+      activeFilters.value.tags.push(tag)
+    }
+  }
+
   // 获取工具详情
   const getToolDetail = async (toolId) => {
     try {
@@ -295,6 +310,7 @@ export const useToolsStore = defineStore('tools', () => {
 
       // 先检查是否已收藏
       const userCollection = await HttpManager.getUserCollection()
+      // const userCollection = false
       const isCollected = userCollection.data?.some(item =>
         item.resourceId === toolId && item.resourceType === resourceType
       )
@@ -441,6 +457,8 @@ export const useToolsStore = defineStore('tools', () => {
     // 工具相关
     fetchTools,
     searchTools,
+    toggleSort,
+    toggleTag,
     getToolDetail,
     addToolView,
     toggleToolCollection,

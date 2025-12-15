@@ -179,3 +179,7 @@ const submit = async () => {
   }
 }
 </script>
+
+<style scoped>
+@import '../../index.css';
+</style>

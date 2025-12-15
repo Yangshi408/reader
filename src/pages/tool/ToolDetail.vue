@@ -63,9 +63,11 @@
       <h2 class="text-lg font-bold text-[#00a99d] flex items-center gap-2 mb-6">
         <i class="fas fa-info-circle"></i> 使用说明
       </h2>
-      <div
-        class="bg-gray-100 rounded-xl h-64 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
-        <span></span>
+      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <!-- 使用 pre-line 保留换行符，并设置合适的行高 -->
+        <div class="whitespace-pre-line leading-relaxed text-gray-700">
+          {{ tool.instructions }}
+        </div>
       </div>
     </div>
 
@@ -155,6 +157,8 @@ const handleCollect = async () => {
 </script>
 
 <style scoped>
+@import '../../index.css';
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }

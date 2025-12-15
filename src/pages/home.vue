@@ -859,7 +859,7 @@ main {
 @media (max-width:1024px) {
   .container { flex-direction:column; }
   .grid { grid-template-columns:repeat(3,1fr); }
-  .sidebar { width:100px; margin-bottom:1rem; }
+  .sidebar { width:100px; margin-bottom:1rem; z-index: 10;}
   .avatar-container {
     right: 10px;
   }
