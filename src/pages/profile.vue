@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen relative overflow-hidden">
+  <div class="min-h-screen relative">
     <div class="main-wrapper">
       <div class="relative z-10 container mx-auto pt-8 pb-20">
         <!-- 左侧可折叠侧边栏 - 保持与home.vue一致 -->
