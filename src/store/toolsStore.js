@@ -3,20 +3,20 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { HttpManager } from '@/api'
 import { mockData } from '@/data/mockData'
+import vuexStore from '@/store/index'
 
 export const useToolsStore = defineStore('tools', () => {
   // ============ State ============
   const toolsList = ref([])
   const categories = ref([])
-  const user = ref({
-    isLogin: true,
-    avatar: 'https://ui-avatars.com/api/?name=Guest',
-    name: '访客用户',
-    email: '',
-    token: null,
-    id: null
-  })
-
+  // const user = ref({
+  //   isLogin: true,
+  //   avatar: 'https://ui-avatars.com/api/?name=Guest',
+  //   name: '访客用户',
+  //   email: '',
+  //   token: null,
+  //   id: null
+  // })
   const isLoading = ref(false)
   const pagination = ref({
     page: 1,
@@ -34,7 +34,7 @@ export const useToolsStore = defineStore('tools', () => {
   const currentToolDetail = ref(null)
 
   // ============ Getters ============
-  // 按分类分组工具
+  // 1. 按分类分组工具
   const toolsByCategory = computed(() => {
     const grouped = {}
     toolsList.value.forEach(tool => {
@@ -45,8 +45,7 @@ export const useToolsStore = defineStore('tools', () => {
     })
     return grouped
   })
-
-  // 获取所有标签
+  // 2. 获取所有标签
   const allTags = computed(() => {
     const tags = new Set()
     toolsList.value.forEach(tool => {
@@ -54,51 +53,36 @@ export const useToolsStore = defineStore('tools', () => {
     })
     return Array.from(tags)
   })
+  // 3. 当前用户是否已登录
+  // const isAuthenticated = computed(() => vuexStore.getters.isLoggedIn)
+  const isAuthenticated = ref(true)
 
-  // 当前用户是否已登录
-  const isAuthenticated = computed(() => user.value.isLogin)
+  // 4. 用户信息
+  const userInfo = computed(() => vuexStore.getters.userInfo)
+  // userInfo: state => ({
+  //     id: state.userId,
+  //     username: state.username,
+  //     nickname: state.nickname,
+  //     email: state.email,
+  //     avatar: state.avatar,
+  //     role: state.role,
+  //     description: state.description,
+  //     facePhoto: state.facePhoto
+  //   }),
 
   // ============ Actions ============
-
-  // 初始化认证状态
+  // 1. 初始化认证状态：调用 Vuex 的检查登录状态
   const initAuth = () => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        user.value = {
-          isLogin: true,
-          ...parsedUser,
-          token
-        }
-      } catch (error) {
-        console.error('解析用户数据失败:', error)
-        clearAuth()
-      }
-    }
+    vuexStore.dispatch('checkLoginStatus')
   }
-
-  // 用户登录
+  // 2. 用户登录：调用 Vuex 的 loginSuccess action 同步状态
   const login = async (credentials) => {
     try {
       const response = await HttpManager.loginIn(credentials)
-
       if (response.code === 200 && response.data) {
         const { token, ...userData } = response.data
-
-        // 保存到localStorage
-        localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(userData))
-
-        // 更新store状态
-        user.value = {
-          isLogin: true,
-          ...userData,
-          token
-        }
-
+        // 调用 Vuex 的 action 更新状态（由 Vuex 统一维护）
+        await vuexStore.dispatch('loginSuccess', { userInfo: userData, token })
         return { success: true, user: userData, token }
       } else {
         return {
@@ -114,12 +98,10 @@ export const useToolsStore = defineStore('tools', () => {
       }
     }
   }
-
-  // 用户注册
+  // 3. 用户注册：注册成功后无需本地维护状态，由登录时统一同步到 Vuex
   const register = async (userData) => {
     try {
       const response = await HttpManager.SignUp(userData)
-
       if (response.code === 200) {
         return { success: true, message: response.message || '注册成功' }
       } else {
@@ -137,14 +119,16 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 获取用户资料
+  // 4. 获取用户资料：更新后同步到 Vuex
   const fetchUserProfile = async () => {
     try {
-      if (!user.value.isLogin) return null
+      if (!isAuthenticated.value) return null
 
       const response = await HttpManager.getUserProfile()
       if (response.code === 200 && response.data) {
-        user.value = { ...user.value, ...response.data }
+        // 调用 Vuex 的 mutation 更新用户信息
+        vuexStore.commit('setUserInfo', response.data)
+        // 更新 localStorage（也可由 Vuex 的 action 统一处理）
         localStorage.setItem('user', JSON.stringify(response.data))
         return response.data
       }
@@ -155,36 +139,22 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 清除认证信息
-  const clearAuth = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    user.value = {
-      isLogin: false,
-      avatar: 'https://ui-avatars.com/api/?name=Guest',
-      name: '访客用户',
-      email: '',
-      token: null,
-      id: null
-    }
-  }
-
-  // 用户登出
+  // 5. 用户登出：调用 Vuex 的 logout action
   const logout = async () => {
     try {
-      if (user.value.isLogin) {
+      if (isAuthenticated.value) {
         await HttpManager.logout()
       }
     } catch (error) {
       console.error('登出失败:', error)
     } finally {
-      clearAuth()
+      // 由 Vuex 统一清除状态
+      vuexStore.dispatch('logout')
     }
   }
 
   // ============ 工具相关Actions ============
-
-  // 获取工具列表
+  // 1. 获取工具列表
   const fetchTools = async (params = {}, useMock = false) => {
     isLoading.value = true
 
@@ -225,7 +195,7 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 搜索工具
+  // 2. 搜索工具
   const searchTools = async (query, params = {}) => {
     if (!query?.trim()) {
       searchResults.value = []
@@ -255,12 +225,12 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 筛选工具信息更新
-  // 1. 排序方式
+  // 3. 筛选工具信息更新
+  // (1) 排序方式
   const toggleSort = (sort) => {
     activeFilters.value.sort = sort
   }
-  // 2. 标签
+  // (2) 标签
   const toggleTag = (tag) => {
     const index = activeFilters.value.tags.indexOf(tag)
     if (index > -1) {
@@ -270,7 +240,7 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 获取工具详情
+  // 4. 获取工具详情
   const getToolDetail = async (toolId) => {
     try {
       const response = await HttpManager.getToolDetail(toolId, 'tool')
@@ -292,7 +262,7 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 增加工具浏览量
+  // 5. 增加工具浏览量
   const addToolView = async (toolId) => {
     try {
       await HttpManager.addToolView(toolId)
@@ -301,10 +271,10 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 切换收藏状态
+  // 6. 切换收藏状态
   const toggleToolCollection = async (toolId, resourceType = 'tool') => {
     try {
-      if (!user.value.isLogin) {
+      if (!isAuthenticated.value) {
         throw new Error('请先登录')
       }
 
@@ -330,10 +300,10 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 提交工具
+  // 7. 提交工具
   const submitTool = async (formData) => {
     try {
-      if (!user.value.isLogin) {
+      if (!isAuthenticated.value) {
         throw new Error('请先登录')
       }
 
@@ -364,7 +334,7 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // AI分析链接（需要根据实际情况调整）
+  // 8. AI分析链接（需要根据实际情况调整）
   const analyzeUrl = async (url) => {
     try {
       // 这里需要根据实际API调整
@@ -377,19 +347,6 @@ export const useToolsStore = defineStore('tools', () => {
     } catch (error) {
       console.error('AI分析失败:', error)
       throw error
-    }
-  }
-
-  // 获取用户提交的工具列表
-  const fetchUserSubmissions = async () => {
-    try {
-      if (!user.value.isLogin) return []
-
-      const response = await HttpManager.getUserSubmissions()
-      return response.data || []
-    } catch (error) {
-      console.error('获取用户提交失败:', error)
-      return []
     }
   }
 
@@ -434,7 +391,7 @@ export const useToolsStore = defineStore('tools', () => {
     // State
     toolsList,
     categories,
-    user,
+    userInfo,
     isLoading,
     pagination,
     searchResults,
@@ -451,7 +408,6 @@ export const useToolsStore = defineStore('tools', () => {
     login,
     register,
     fetchUserProfile,
-    clearAuth,
     logout,
 
     // 工具相关
@@ -464,7 +420,6 @@ export const useToolsStore = defineStore('tools', () => {
     toggleToolCollection,
     submitTool,
     analyzeUrl,
-    fetchUserSubmissions,
     loadMoreTools,
     resetToolsList
   }

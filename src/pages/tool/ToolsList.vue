@@ -1,12 +1,18 @@
 <template>
   <div class="space-y-8 relative">
     <header class="flex justify-between items-center sticky top-0 z-40 py-4 glass-header rounded-2xl px-6 mb-8">
+      <!-- 主页按钮 -->
+      <div>
+        <router-link to="/home" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+          <i class="fas fa-home"></i> 主页
+        </router-link>
+      </div>
       <!-- 头部搜索框 -->
       <div class="relative w-full max-w-xl group">
         <input v-model="searchInput" @keyup.enter="handleSearch" type="text" placeholder="搜索想要的神器..."
-          class="w-full h-12 pl-12 pr-4 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
-        <i
-          class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+          class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
+        <i @click="handleSearch" class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+        <!-- 搜索成功后的提示框 -->
         <div v-if="hasSearched"
           class="absolute top-14 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down">
           <i class="fas fa-info-circle mr-2"></i>
@@ -44,13 +50,13 @@
           </div>
         </div>
         <div class="relative" ref="avatarRef">
-          <div v-if="user.isLogin" @click="showUserMenu = !showUserMenu" class="cursor-pointer relative">
-            <img :src="user.avatar"
+          <div v-if="isAuthenticated" @click="showUserMenu = !showUserMenu" class="cursor-pointer relative">
+            <img :src="userInfo.avatar"
               class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover">
             <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
           <button v-else @click="goToLogin" class="btn-primary-outline">登录</button>
-          <div v-if="showUserMenu && user.isLogin"
+          <div v-if="showUserMenu && isAuthenticated"
             class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in">
             <!-- 需要修改 -->
             <router-link to="/profile" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"><i
@@ -59,7 +65,7 @@
                 class="fas fa-key mr-2"></i>修改密码</a>
             <div class="h-px bg-gray-100 my-1"></div>
             <p @click="handleLogout" class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"><i
-                class="fas fa-sign-out-alt mr-2"></i>安全退出</p>
+                class="fas fa-sign-out-alt mr-2"></i>退出登录</p>
           </div>
         </div>
       </div>
@@ -127,7 +133,8 @@ const toolsStore = useToolsStore()
 const {
   toolsList,
   categories,
-  user,
+  userInfo,
+  isAuthenticated,
   // isLoading,
   activeFilters,
   searchResults
@@ -143,7 +150,6 @@ const tooltipTimers = ref({})
 const TOOLTIP_DELAY = 500
 
 onMounted(() => {
-  toolsStore.fetchTools({}, true)
   document.addEventListener('click', closeDropdowns)
 })
 
@@ -174,9 +180,9 @@ const handleMouseLeave = (toolId) => {
 const handleSearch = async () => {
   const query = searchInput.value.trim()
   if (query) {
-    hasSearched.value = true
     try {
       await toolsStore.searchTools(query)
+      hasSearched.value = true
     } catch (error) {
       ElMessage.error('搜索失败')
     }
@@ -191,9 +197,13 @@ const clearSearch = () => {
 
 const getToolsByCategory = (cat) => {
   let list = []
-  if (hasSearched.value && searchResults.value.length > 0) {
-    list = searchResults.value?.filter(t => t.category === cat)
-    return filterToolList(list)
+  if (hasSearched.value) {
+    if (searchResults.value.length > 0) {
+      list = searchResults.value?.filter(t => t.category === cat)
+      return filterToolList(list)
+    } else {
+      return list
+    }
   }
   list = toolsList.value?.filter(t => t.category === cat)
   return filterToolList(list)
@@ -218,12 +228,13 @@ const filterToolList = (list) => {
   }
   // 标签
   if (activeFilters.value.tags.length > 0) {
-    list = list.filter(item => activeFilters.value.tags.some(tag => item.tags.includes(tag)))
+    list = list.filter(item => activeFilters.value.tags.every(tag => item.tags.includes(tag)))
   }
 
   return list
 }
 
+// 访问详情页
 const goToDetail = async (id) => {
   if (tooltipTimers.value[id]) {
     clearTimeout(tooltipTimers.value[id])
