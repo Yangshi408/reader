@@ -24,7 +24,7 @@
 
         <div
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="user.avatar" class="w-5 h-5 rounded-full">
+          <img :src="userInfo.avatar" class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">Admin</span>
         </div>
       </div>
@@ -97,7 +97,10 @@ import { storeToRefs } from 'pinia'
 const route = useRoute()
 const toolsStore = useToolsStore()
 
-const { user } = storeToRefs(toolsStore)
+const {
+  userInfo,
+  isAuthenticated
+} = storeToRefs(toolsStore)
 const tool = ref(null)
 const isCollected = ref(false)
 const isLoading = ref(false)
@@ -119,7 +122,7 @@ const loadToolDetail = async (id) => {
     tool.value = data
 
     // 检查收藏状态
-    if (toolsStore.user.isLogin) {
+    if (isAuthenticated) {
       await checkCollectionStatus(id)
     }
   } catch (error) {
@@ -141,7 +144,7 @@ const checkCollectionStatus = async (toolId) => {
 }
 
 const handleCollect = async () => {
-  if (!toolsStore.user.isLogin) {
+  if (!isAuthenticated) {
     ElMessage.warning('请先登录')
     return
   }

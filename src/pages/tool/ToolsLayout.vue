@@ -3,8 +3,9 @@
     <aside :class="['fixed h-full bg-white/80 backdrop-blur-xl border-r border-white/50 z-50 transition-all duration-300 shadow-lg flex flex-col', isCollapsed ? 'w-16' : 'w-64']">
       <!-- Logo和收起按钮区域 -->
       <div class="h-20 flex items-center justify-between border-b border-gray-100 px-4 relative">
-        <!-- Logo - 收起时隐藏文字部分 -->
-        <div class="flex items-center justify-start w-30 h-21">
+        <!-- Logo -->
+        <div class="flex items-center justify-start w-30 h-21 relative">
+          <div v-if="!isCollapsed" @click="router.push({name: 'home'})" class="absolute left-6 w-[125px] h-10 cursor-pointer"></div>
           <img v-if="!isCollapsed" src="@/assets/logo.png" alt="SoftLink Logo" class="w-full h-full object-cover ml-[-20px]" />
         </div>
 
@@ -153,13 +154,23 @@ const handleKeyDown = (e) => {
   }
 }
 // 检查localStorage中的侧边栏状态
-onMounted(() => {
+onMounted(async () => {
   const savedState = localStorage.getItem('sidebarCollapsed')
   if (savedState !== null) {
     isCollapsed.value = savedState === 'true'
   }
 
   window.addEventListener('keydown', handleKeyDown)
+
+  // 如果分类数据为空，则获取工具列表（这同时会填充分类）
+  // 这个操作主要是避免用户在工具提交页面或详情页刷新浏览器导致数据丢失（最开始是在ToolsList.vue页面加载时加载数据的，但是会出现上述的问题，故改到整个页面框架中加载数据）
+  if (categories.value.length === 0) {
+    try {
+      await store.fetchTools({}, true)
+    } catch (error) {
+      console.error('Failed to fetch tools:', error)
+    }
+  }
 })
 
 // 清理事件监听器
