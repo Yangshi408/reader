@@ -1,62 +1,93 @@
 <template>
   <div class="min-h-screen flex bg-gradient-to-br from-[#f3f7fc] to-[#eef3f7] text-[#2d3748] font-sans">
-    <aside class="w-64 fixed h-full bg-white/80 backdrop-blur-xl border-r border-white/50 z-50 transition-all shadow-lg flex flex-col">
-      <div class="h-20 flex items-center justify-center border-b border-gray-100">
-        <img src="@/assets/logo.png" alt="SoftLink Logo" class="w-full h-full object-contain" />
+    <aside :class="['fixed h-full bg-white/80 backdrop-blur-xl border-r border-white/50 z-50 transition-all duration-300 shadow-lg flex flex-col', isCollapsed ? 'w-16' : 'w-64']">
+      <!-- Logo和收起按钮区域 -->
+      <div class="h-20 flex items-center justify-between border-b border-gray-100 px-4 relative">
+        <!-- Logo - 收起时隐藏文字部分 -->
+        <div class="flex items-center justify-start w-30 h-21">
+          <img v-if="!isCollapsed" src="@/assets/logo.png" alt="SoftLink Logo" class="w-full h-full object-cover ml-[-20px]" />
+        </div>
+
+        <!-- 收起/展开按钮 - 使用更美观的图标 -->
+        <button
+          @click="toggleSidebar"
+          class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-blue-600"
+          :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'">
+          <i :class="[isCollapsed ? 'fas fa-bars' : 'fas fa-angle-double-left']"></i>
+        </button>
       </div>
 
-      <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+      <!-- 导航菜单 -->
+      <nav class="flex-1 overflow-y-auto overflow-x-hidden py-6 px-2 space-y-2">
         <div class="nav-group">
-          <div class="flex items-center px-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold cursor-default">
-            <i class="fas fa-layer-group w-6"></i>
-            <span>工具资源</span>
+          <!-- 主要分类标题 - 收起时居中 -->
+          <div :class="['flex items-center rounded-xl bg-blue-50 text-blue-600 font-bold cursor-default group', isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3']">
+            <i class="fas fa-layer-group group-hover:rotate-12 transition-transform"></i>
+            <span v-if="!isCollapsed" class="ml-3 truncate">工具资源</span>
           </div>
-          <div class="ml-10 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
+
+          <!-- 子分类 -->
+          <div v-if="!isCollapsed" class="ml-10 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
             <a v-for="cat in categories" :key="cat"
                href="javascript:void(0)"
                @click="handleScrollTo(cat)"
-               class="block py-2 text-sm text-gray-500 hover:text-blue-600 transition-colors">
+               class="block py-2 text-sm text-gray-500 hover:text-blue-600 transition-colors truncate">
               {{ cat }}
             </a>
           </div>
         </div>
 
-        <router-link to="/courses" class="nav-item">
-          <i class="fas fa-route w-6"></i> 课程路线
-        </router-link>
-        <router-link to="/showcase" class="nav-item">
-          <i class="fas fa-project-diagram w-6"></i> 项目展示
+        <!-- 其他导航项 - 收起时居中 -->
+        <router-link to="/courses"
+          :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
+                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
+                   route.name === 'courses' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+          <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">课程路线</span>
         </router-link>
 
-        <!-- 返回上一页的按钮 -->
+        <router-link to="/showcase"
+          :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
+                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
+                   route.name === 'showcase' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+          <i class="fas fa-project-diagram group-hover:rotate-12 transition-transform"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">项目展示</span>
+        </router-link>
+
+        <!-- 返回上一级按钮（只在详情页和工具提交页面显示） -->
         <div v-if="showBackButton"
-          class="absolute left-4 cursor-pointer text-gray-500 hover:text-blue-600 transition-colors"
-          @click="handleBack">
-          <i class="fas fa-arrow-left text-lg"></i>
-          返回上一级
+            class="w-full px-2">
+          <div
+            @click="handleBack"
+            :class="['flex items-center rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-blue-600 font-medium cursor-pointer hover:bg-blue-100 hover:shadow-md transition-all group',
+                     isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3']">
+            <!-- 螺旋型返回图标 -->
+            <i class="fas fa-reply-all group-hover:rotate-12 transition-transform"></i>
+            <span v-if="!isCollapsed" class="ml-3 truncate">返回上一级</span>
+          </div>
         </div>
       </nav>
 
       <!-- 底部区域 -->
-      <div class="mt-auto border-t border-gray-100 pt-2">
-        <!-- 工具提交按钮 -->
+      <div class="mt-auto border-t border-gray-100 pt-2 px-2">
+        <!-- 工具提交按钮 - 收起时居中 -->
         <router-link to="/tools/submit"
-          class="flex items-center px-4 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg mx-2 my-1"
-          active-class="bg-blue-50 text-blue-600 font-medium">
-          <i class="fas fa-plus-circle w-6"></i>
-          <span class="ml-3">工具提交</span>
+          :class="['flex items-center rounded-lg transition-colors cursor-pointer',
+                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
+                   route.name === 'ToolSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+          <i class="fas fa-plus-circle"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">工具提交</span>
         </router-link>
 
         <!-- 版权信息 -->
-        <div class="p-4 pt-2 text-xs text-center text-gray-400 border-t border-gray-100 mt-2">
+        <div v-if="!isCollapsed" class="p-4 pt-2 text-xs text-center text-gray-400 border-t border-gray-100 mt-2">
           &copy; 2025 SoftLink Platform
         </div>
       </div>
     </aside>
 
-    <main class="flex-1 ml-64 p-8 overflow-x-hidden">
-      <!-- 顶部导航栏 -->
-
+    <!-- 主内容区域 -->
+    <main :class="['flex-1 p-8 overflow-x-hidden transition-all duration-300', isCollapsed ? 'ml-16' : 'ml-64']">
       <!-- 业内子路由显示区域，工具列表区域 -->
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
@@ -68,7 +99,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToolsStore } from '@/store/toolsStore'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -77,6 +108,9 @@ const store = useToolsStore()
 const { categories } = storeToRefs(store)
 const router = useRouter()
 const route = useRoute()
+
+// 侧边栏收起状态
+const isCollapsed = ref(false)
 
 // 计算属性
 const showBackButton = computed(() => {
@@ -104,32 +138,51 @@ const handleBack = () => {
     router.push({ name: 'ToolsList' })
   }
 }
+
+// 3. 切换侧边栏状态
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+  // 保存到localStorage，保存用户偏好
+  localStorage.setItem('sidebarCollapsed', isCollapsed.value.toString())
+}
+// 添加键盘快捷键：Ctrl+B 切换侧边栏
+const handleKeyDown = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault()
+    toggleSidebar()
+  }
+}
+// 检查localStorage中的侧边栏状态
+onMounted(() => {
+  const savedState = localStorage.getItem('sidebarCollapsed')
+  if (savedState !== null) {
+    isCollapsed.value = savedState === 'true'
+  }
+
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+// 清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>
 @import '../../index.css';
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
-  transition: all 0.2s;
-  cursor: pointer;
-  text-decoration: none;
-}
-.nav-item:hover, .nav-item.active {
-  background: white;
-  color: #0066ff;
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.1);
-}
+/* 响应式调整
+@media (max-width: 768px) {
+  aside {
+    transform: translateX(-100%);
+  }
 
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
+  aside.open {
+    transform: translateX(0);
+  }
+
+  main {
+    margin-left: 0 !important;
+  }
+} */
 </style>
