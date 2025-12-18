@@ -3,20 +3,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { HttpManager } from '@/api'
 import { mockData } from '@/data/mockData'
+import { predefinedTags, tagGroups } from '@/data/tags'
 import vuexStore from '@/store/index'
 
 export const useToolsStore = defineStore('tools', () => {
   // ============ State ============
   const toolsList = ref([])
   const categories = ref([])
-  // const user = ref({
-  //   isLogin: true,
-  //   avatar: 'https://ui-avatars.com/api/?name=Guest',
-  //   name: '访客用户',
-  //   email: '',
-  //   token: null,
-  //   id: null
-  // })
   const isLoading = ref(false)
   const pagination = ref({
     page: 1,
@@ -45,30 +38,47 @@ export const useToolsStore = defineStore('tools', () => {
     })
     return grouped
   })
-  // 2. 获取所有标签
-  const allTags = computed(() => {
-    const tags = new Set()
-    toolsList.value.forEach(tool => {
-      tool.tags?.forEach(tag => tags.add(tag))
-    })
-    return Array.from(tags)
+  // // 2. 获取所有标签
+  // const allTags = computed(() => {
+  //   const tags = new Set()
+  //   toolsList.value.forEach(tool => {
+  //     tool.tags?.forEach(tag => tags.add(tag))
+  //   })
+  //   return Array.from(tags)
+  // })
+  // 按类型分组的标签（用于筛选面板）
+  const tagsByCategory = computed(() => {
+    return {
+      平台: predefinedTags?.filter(tag =>
+        ['web', 'desktop', 'mobile', 'cross-platform'].includes(tag.id)
+      ),
+      操作系统: predefinedTags?.filter(tag =>
+        ['windows', 'macos', 'linux', 'ios', 'android'].includes(tag.id)
+      ),
+      技术栈: predefinedTags?.filter(tag =>
+        ['javascript', 'python', 'java', 'csharp', 'cpp', 'php', 'go', 'rust'].includes(tag.id)
+      ),
+      工具类型: predefinedTags?.filter(tag =>
+        ['ide', 'editor', 'cli', 'api', 'debug', 'test', 'design'].includes(tag.id)
+      ),
+      用途领域: predefinedTags?.filter(tag =>
+        ['frontend', 'backend', 'database', 'devops', 'ai-ml', 'data-science', 'web3', 'game-dev'].includes(tag.id)
+      ),
+      许可证价格: predefinedTags?.filter(tag =>
+        ['open-source', 'free', 'freemium', 'paid', 'subscription'].includes(tag.id)
+      ),
+      其他: predefinedTags?.filter(tag =>
+        ['general', 'new', 'popular', 'official', 'community'].includes(tag.id)
+      )
+    }
   })
+
   // 3. 当前用户是否已登录
   // const isAuthenticated = computed(() => vuexStore.getters.isLoggedIn)
   const isAuthenticated = ref(true)
 
   // 4. 用户信息
   const userInfo = computed(() => vuexStore.getters.userInfo)
-  // userInfo: state => ({
-  //     id: state.userId,
-  //     username: state.username,
-  //     nickname: state.nickname,
-  //     email: state.email,
-  //     avatar: state.avatar,
-  //     role: state.role,
-  //     description: state.description,
-  //     facePhoto: state.facePhoto
-  //   }),
 
   // ============ Actions ============
   // 1. 初始化认证状态：调用 Vuex 的检查登录状态
@@ -239,6 +249,10 @@ export const useToolsStore = defineStore('tools', () => {
       activeFilters.value.tags.push(tag)
     }
   }
+  // (3) 清空标签（通用除外）
+  const clearTags = () => {
+    activeFilters.value.tags = []
+  }
 
   // 4. 获取工具详情
   const getToolDetail = async (toolId) => {
@@ -315,7 +329,12 @@ export const useToolsStore = defineStore('tools', () => {
         fullDesc: formData.fullDesc,
         category: formData.category,
         type: formData.type,
-        tags: formData.tagInput?.split(',').map(tag => tag.trim()).filter(tag => tag) || []
+        tags: formData.selectedTags // 改为选中的标签数组
+      }
+
+      // 验证标签
+      if (!formattedData.tags || formattedData.tags.length === 0) {
+        throw new Error('请至少选择一个标签')
       }
 
       const response = await HttpManager.submitTool(formattedData)
@@ -334,7 +353,15 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 8. AI分析链接（需要根据实际情况调整）
+  // 8. 根据分类推荐标签
+  const recommendTags = (category) => {
+    const recommended = tagGroups[category] || []
+    return predefinedTags.value?.filter(tag =>
+      recommended.includes(tag.id) || tag.id === 'general'
+    )
+  }
+
+  // 9. AI分析链接（需要根据实际情况调整）
   const analyzeUrl = async (url) => {
     try {
       // 这里需要根据实际API调整
@@ -400,8 +427,8 @@ export const useToolsStore = defineStore('tools', () => {
 
     // Getters
     toolsByCategory,
-    allTags,
     isAuthenticated,
+    tagsByCategory,
 
     // Actions
     initAuth,
@@ -415,10 +442,12 @@ export const useToolsStore = defineStore('tools', () => {
     searchTools,
     toggleSort,
     toggleTag,
+    clearTags,
     getToolDetail,
     addToolView,
     toggleToolCollection,
     submitTool,
+    recommendTags,
     analyzeUrl,
     loadMoreTools,
     resetToolsList

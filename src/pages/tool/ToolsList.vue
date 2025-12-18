@@ -21,14 +21,15 @@
         </div>
       </div>
       <!-- 筛选和用户菜单 -->
+      <!-- 筛选 -->
       <div class="flex items-center gap-6">
         <div class="relative" ref="filterRef">
           <button @click="showFilter = !showFilter"
             class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
             <i class="fas fa-sliders-h"></i> 筛选
           </button>
-          <div v-if="showFilter"
-            class="absolute right-0 top-12 w-72 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in">
+          <div v-if="showFilter" class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in max-h-[70vh] overflow-y-auto">
+            <!-- 排序 -->
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
               <div class="flex gap-2">
@@ -38,17 +39,57 @@
                 </button>
               </div>
             </div>
-            <div>
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">标签筛选 (多选)</h4>
-              <div class="flex flex-wrap gap-2">
-                <span v-for="tag in ['开源', '免费', 'Mac', 'Win', 'Web']" :key="tag" @click="toolsStore.toggleTag(tag)"
-                  :class="['cursor-pointer px-2 py-1 rounded text-xs transition-colors', activeFilters.tags.includes(tag) ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']">
-                  {{ tag }}
-                </span>
+            <!-- 标签 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                标签筛选 (多选)
+                <button
+                  @click="clearTagFilters"
+                  v-if="activeFilters.tags.length > 0"
+                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  清除
+                </button>
+              </h4>
+              <!-- 标签搜索 -->
+              <div class="mb-3">
+                <input
+                  v-model="tagFilterSearch"
+                  type="text"
+                  placeholder="搜索标签..."
+                  class="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+              </div>
+              <!-- 分组标签 -->
+              <div class="space-y-3">
+                <div v-for="(tags, groupName) in filteredTagGroups" :key="groupName">
+                  <h5 class="text-xs font-medium text-gray-500 mb-2">{{ groupName }}</h5>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <span
+                      v-for="tag in tags"
+                      :key="tag.id"
+                      @click="toolsStore.toggleTag(tag.id)"
+                      :class="[
+                        'cursor-pointer px-2 py-1 rounded text-xs transition-all duration-200',
+                        'border flex items-center gap-1',
+                        activeFilters.tags.includes(tag.id)
+                          ? tag.color + ' border-transparent shadow-sm font-medium'
+                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                      ]"
+                    >
+                      {{ tag.name }}
+                      <i
+                        v-if="activeFilters.tags.includes(tag.id)"
+                        class="fas fa-check text-xs"
+                      ></i>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <!-- 用户菜单 -->
         <div class="relative" ref="avatarRef">
           <div v-if="isAuthenticated" @click="showUserMenu = !showUserMenu" class="cursor-pointer relative">
             <img :src="userInfo.avatar"
@@ -120,45 +161,72 @@
 
 <!-- 修改 ToolsList.vue 的 script 部分 -->
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useToolsStore } from '@/store/toolsStore'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 
 const router = useRouter()
+const route = useRoute()
 const toolsStore = useToolsStore()
 
 // 使用storeToRefs来保持响应式
 const {
+  // 响应式变量
   toolsList,
   categories,
   userInfo,
-  isAuthenticated,
-  // isLoading,
   activeFilters,
-  searchResults
+  searchResults,
+  // isLoading,
+  // 计算属性
+  isAuthenticated
 } = storeToRefs(toolsStore)
 
+// 一、变量声明
 const searchInput = ref('')
-const hasSearched = ref(false)
+const hasSearched = ref(false) // 是否使用搜索功能
 const showFilter = ref(false)
 const showUserMenu = ref(false)
 const activeToolId = ref(null)
 const tooltipTimers = ref({})
+const tagFilterSearch = ref('') // 标签过滤搜索
 
 const TOOLTIP_DELAY = 500
 
-onMounted(() => {
-  document.addEventListener('click', closeDropdowns)
+// 二、计算属性
+// 1. 过滤后的标签
+const filteredTagGroups = computed(() => {
+  const groups = toolsStore.tagsByCategory
+  const searchTerm = tagFilterSearch.value.toLowerCase()
+  if (searchTerm) {
+    const filtered = {}
+    Object.keys(groups).forEach(groupName => {
+      const filteredTags = groups[groupName].filter(tag =>
+        tag.name.toLowerCase().includes(searchTerm) ||
+        tag.id.toLowerCase().includes(searchTerm)
+      )
+      if (filteredTags.length > 0) {
+        filtered[groupName] = filteredTags
+      }
+    })
+    return filtered
+  }
+  return groups
+})
+// 2. 过滤后的类别
+const filteredCategories = computed(() => {
+  // 如果有搜索结果，只显示包含搜索结果的分类
+  if (hasSearched.value && searchResults.value.length > 0) {
+    const cats = [...new Set(searchResults.value.map(t => t.category))]
+    return categories.value?.filter(cat => cats.includes(cat))
+  }
+  return categories.value
 })
 
-onUnmounted(() => {
-  Object.values(tooltipTimers.value).forEach(timerId => {
-    if (timerId) clearTimeout(timerId)
-  })
-})
-
+// 三、方法
+// 1. 鼠标进入
 const handleMouseEnter = (toolId) => {
   if (tooltipTimers.value[toolId]) {
     clearTimeout(tooltipTimers.value[toolId])
@@ -167,7 +235,7 @@ const handleMouseEnter = (toolId) => {
     activeToolId.value = toolId
   }, TOOLTIP_DELAY)
 }
-
+// 2. 鼠标离开
 const handleMouseLeave = (toolId) => {
   if (tooltipTimers.value[toolId]) {
     clearTimeout(tooltipTimers.value[toolId])
@@ -175,8 +243,7 @@ const handleMouseLeave = (toolId) => {
   }
   activeToolId.value = null
 }
-
-// 搜索功能
+// 3. 搜索功能
 const handleSearch = async () => {
   const query = searchInput.value.trim()
   if (query) {
@@ -188,37 +255,31 @@ const handleSearch = async () => {
     }
   }
 }
-
+// 4. 清空搜索框
 const clearSearch = () => {
   searchInput.value = ''
   hasSearched.value = false
   searchResults.value = []
 }
-
+// 5. 清空已选标签
+const clearTagFilters = () => {
+  activeFilters.value.tags = []
+}
+// 6. 根据类别获取工具
 const getToolsByCategory = (cat) => {
   let list = []
-  if (hasSearched.value) {
-    if (searchResults.value.length > 0) {
+  if (hasSearched.value) { // 是否进行搜索
+    if (searchResults.value.length > 0) { // 有搜索结果
       list = searchResults.value?.filter(t => t.category === cat)
       return filterToolList(list)
-    } else {
+    } else { // 无搜索结果，返回空list
       return list
     }
   }
   list = toolsList.value?.filter(t => t.category === cat)
-  return filterToolList(list)
+  return filterToolList(list) // 最后还需要对工具列表使用筛选功能
 }
-
-const filteredCategories = computed(() => {
-  // 如果有搜索结果，只显示包含搜索结果的分类
-  if (hasSearched.value && searchResults.value.length > 0) {
-    const cats = [...new Set(searchResults.value.map(t => t.category))]
-    return categories.value?.filter(cat => cats.includes(cat))
-  }
-  return categories.value
-})
-
-// 筛选逻辑，分别作用于各个category下
+// 7. 筛选逻辑，分别作用于各个category下
 const filterToolList = (list) => {
   // 排序
   if (activeFilters.value.sort === '最多浏览') {
@@ -228,13 +289,11 @@ const filterToolList = (list) => {
   }
   // 标签
   if (activeFilters.value.tags.length > 0) {
-    list = list.filter(item => activeFilters.value.tags.every(tag => item.tags.includes(tag)))
+    list = list?.filter(item => activeFilters.value.tags.every(tag => item.tags.includes(tag)))
   }
-
   return list
 }
-
-// 访问详情页
+// 8. 访问详情页
 const goToDetail = async (id) => {
   if (tooltipTimers.value[id]) {
     clearTimeout(tooltipTimers.value[id])
@@ -243,12 +302,12 @@ const goToDetail = async (id) => {
   activeToolId.value = null
   router.push({ name: 'ToolDetail', params: { id } })
 }
-
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
+// 9. 进入登录页面
 const goToLogin = () => {
   router.push({ name: 'Login' })
 }
-
+// 10. 退出登录
 const handleLogout = async () => {
   try {
     await toolsStore.logout()
@@ -258,14 +317,42 @@ const handleLogout = async () => {
     ElMessage.error('退出登录失败')
   }
 }
-
-// 辅助：关闭下拉菜单
+// 11. 辅助：关闭下拉菜单
 const filterRef = ref(null)
 const avatarRef = ref(null)
 const closeDropdowns = (e) => {
   if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
   if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
 }
+
+// 四、监听器
+// 1. 监听路由参数
+watch(() => route.query, (newQuery) => {
+  if (newQuery.tagId) {
+    const tagId = newQuery.tagId
+    // 清空原始已勾选的标签（“通用”除外），并根据tagId标签进行筛选
+    if (!activeFilters.value.tags.includes(tagId)) {
+      toolsStore.clearTags() // 先清空原始标签
+      toolsStore.toggleTag(tagId)
+    }
+
+    // 如果有tagName，可以显示友好的筛选提示
+    if (newQuery.tagName) {
+      ElMessage.success(`已筛选标签: ${newQuery.tagName}`)
+    }
+  }
+}, { immediate: true })
+
+// 五、生命周期函数
+onMounted(() => {
+  document.addEventListener('click', closeDropdowns)
+})
+
+onUnmounted(() => {
+  Object.values(tooltipTimers.value).forEach(timerId => {
+    if (timerId) clearTimeout(timerId)
+  })
+})
 </script>
 
 <style scoped>

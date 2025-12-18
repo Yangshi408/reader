@@ -42,15 +42,31 @@
           {{ tool.fullDesc }}
         </p>
 
+        <!-- 工具标签 -->
         <div class="flex items-center gap-4 text-sm text-gray-500 mb-6">
-          <span>标签:</span>
-          <div class="flex gap-2">
-            <span v-for="tag in tool.tags" :key="tag"
-              class="text-blue-500 bg-blue-50 px-2 py-0.5 rounded cursor-pointer hover:bg-blue-100">{{ tag }} <i
-                class="fas fa-external-link-alt text-xs ml-1"></i></span>
+          <span class="whitespace-nowrap">标签:</span>
+          <div class="flex gap-2 flex-wrap">
+            <span
+              v-for="tagId in tool.tags"
+              :key="tagId"
+              @click="goToToolsListByTag(tagId)"
+              :class="[
+                'cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition-all duration-200',
+                'flex items-center gap-1 hover:scale-105 hover:shadow-sm',
+                getTagById(tagId).color || 'bg-gray-100 text-gray-700'
+              ]"
+              :title="getTagById(tagId).name"
+            >
+              {{ getTagById(tagId).name }}
+              <i class="fas fa-external-link-alt text-xs opacity-70"></i>
+            </span>
+            <div v-if="!tool.tags || tool.tags.length === 0" class="text-gray-400 text-sm">
+              暂无标签
+            </div>
           </div>
         </div>
 
+        <!-- 工具链接 -->
         <a :href="tool.url" target="_blank"
           class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-lg transition-colors group">
           链接直达 <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
@@ -88,12 +104,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
 import { HttpManager } from '@/api'
 import { storeToRefs } from 'pinia'
+import { predefinedTags } from '@/data/tags'
 
+const router = useRouter()
 const route = useRoute()
 const toolsStore = useToolsStore()
 
@@ -101,20 +119,61 @@ const {
   userInfo,
   isAuthenticated
 } = storeToRefs(toolsStore)
+
+// 一、变量声明
 const tool = ref(null)
 const isCollected = ref(false)
 const isLoading = ref(false)
 
-// 计算属性：标签数组
-// const tagArray = computed(() => {
-//   return tool.value?.tags || []
-// })
+// 二、计算属性
 
-onMounted(async () => {
-  const id = route.params.id
-  await loadToolDetail(id)
-})
+// 三、方法
+// 1. 通过标签id获取标签的信息（name、css样式）
+const getTagById = (tagId) => {
+  return predefinedTags.find(tag => tag.id === tagId) || { name: tagId }
+}
+// 2. 点击标签的跳转逻辑
+const goToToolsListByTag = (tagId) => {
+  // 获取标签的显示名称
+  const tag = getTagById(tagId)
+  const tagName = tag.name
 
+  // 跳转到工具列表页，并传递标签参数
+  router.push({
+    name: 'ToolsList',
+    query: {
+      tagId,
+      tagName // 可选的，用于显示友好名称
+    }
+  })
+}
+// 3. 检测该用户是否收藏
+const checkCollectionStatus = async (toolId) => {
+  try {
+    const response = await HttpManager.getUserCollection()
+    isCollected.value = response.data?.some(item =>
+      item.resourceId === parseInt(toolId) && item.resourceType === 'tool'
+    )
+  } catch (error) {
+    console.error('检查收藏状态失败:', error)
+  }
+}
+// 4. 收藏功能
+const handleCollect = async () => {
+  if (!isAuthenticated) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  try {
+    await toolsStore.toggleToolCollection(tool.value.id)
+    isCollected.value = !isCollected.value
+    ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
+  } catch (error) {
+    ElMessage.error(error.message || '操作失败')
+  }
+}
+// 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
   isLoading.value = true
   try {
@@ -132,31 +191,11 @@ const loadToolDetail = async (id) => {
   }
 }
 
-const checkCollectionStatus = async (toolId) => {
-  try {
-    const response = await HttpManager.getUserCollection()
-    isCollected.value = response.data?.some(item =>
-      item.resourceId === parseInt(toolId) && item.resourceType === 'tool'
-    )
-  } catch (error) {
-    console.error('检查收藏状态失败:', error)
-  }
-}
-
-const handleCollect = async () => {
-  if (!isAuthenticated) {
-    ElMessage.warning('请先登录')
-    return
-  }
-
-  try {
-    await toolsStore.toggleToolCollection(tool.value.id)
-    isCollected.value = !isCollected.value
-    ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
-  } catch (error) {
-    ElMessage.error(error.message || '操作失败')
-  }
-}
+// 四、生命周期函数
+onMounted(async () => {
+  const id = route.params.id
+  await loadToolDetail(id)
+})
 </script>
 
 <style scoped>
