@@ -300,6 +300,7 @@ const goToDetail = async (id) => {
     tooltipTimers.value[id] = null
   }
   activeToolId.value = null
+  toolsStore.addToolView(id) // 浏览量加1
   router.push({ name: 'ToolDetail', params: { id } })
 }
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面

@@ -59,7 +59,7 @@
 
       <!-- 右侧边栏 - 优化布局 -->
       <div class="w-80 flex-shrink-0">
-        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24 flex flex-col h-[calc(100vh-20rem)]">
+        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24 flex flex-col h-[38.2rem]">
           <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-cog"></i> 工具选项
           </h4>
@@ -186,7 +186,7 @@
 
           <!-- 提交按钮 - 固定在底部 -->
           <div class="pt-4 border-t border-gray-100">
-            <button @click="submit" class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2">
+            <button @click="submit" :disabled="isSubmitting" class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-100 disabled:shadow-none disabled:opacity-70">
               <i class="fas fa-file-export"></i> 提交审核
             </button>
           </div>
@@ -201,8 +201,14 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
 import { predefinedTags } from '@/data/tags'
+import { storeToRefs } from 'pinia'
+// import { HttpManager } from '@/api'
 
 const toolsStore = useToolsStore()
+
+const {
+  isAuthenticated // 是否登录
+} = storeToRefs(toolsStore)
 
 // 一、响应式数据定义
 const isAnalyzing = ref(false)
@@ -215,6 +221,7 @@ const form = reactive({
   category: '',
   type: 'external'
 })
+const isSubmitting = ref(false)
 // 标签相关状态
 const tagSearch = ref('')
 const selectedTags = ref(['general'])
@@ -306,22 +313,32 @@ const handleAutoFill = async () => {
 }
 // 6. 提交
 const submit = async () => {
-  if (!validateForm()) {
-    ElMessage.error('请完善必填信息')
-    return
-  }
-
   try {
+    if (!validateForm()) {
+      ElMessage.error('请完善必填信息')
+      return
+    }
+    if (!isAuthenticated.value) {
+      throw new Error('请先登录')
+    }
+    isSubmitting.value = true // 开启加载状态
+
     // 准备数据
     const submitData = {
-      ...form,
-      selectedTags: selectedTags.value
+      ...form, // 解包获取副本，对于引用类型非常需要注意的地方（但是仅是浅拷贝，不过好在form的属性中无引用类型）
+      tags: [...selectedTags.value] // 数组也是引用类型，需要解包
+    }
+    // 验证标签
+    if (submitData.tags.length === 0) {
+      throw new Error('请至少选择一个标签')
     }
 
-    const result = await toolsStore.submitTool(submitData)
+    // const response = await HttpManager.submitTool(submitData)
+    const response = await mockSubmitTool(submitData)
 
-    if (result.success) {
-      ElMessage.success(result.message)
+    if (response.code === 200) {
+      ElMessage.success(response.message || '提交成功，等待管理员审核')
+
       // 重置表单
       Object.keys(form).forEach(key => {
         form[key] = ''
@@ -330,11 +347,36 @@ const submit = async () => {
       selectedTags.value = ['general']
       tagSearch.value = ''
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(response.message || '提交失败')
     }
   } catch (error) {
-    ElMessage.error('提交失败')
+    ElMessage.error(error.message || '提交失败')
+  } finally {
+    isSubmitting.value = false
   }
+}
+// 为方法6模拟后端API请求使用
+const mockSubmitTool = async (submitData) => {
+  // 返回一个Promise，模拟异步请求
+  return new Promise((resolve) => {
+    // 模拟网络延迟（1.5秒）
+    setTimeout(() => {
+      // 模拟响应数据（默认成功，也可以添加随机逻辑模拟失败）
+      // 如需模拟失败，可将code改为非200，比如：{ code: 500, message: '服务器内部错误' }
+      const mockResponse = {
+        code: 200,
+        message: '提交成功，等待管理员审核'
+      }
+
+      // 【可选】添加随机成功/失败逻辑，更贴近真实场景
+      // const isSuccess = Math.random() > 0.2; // 80%成功率
+      // const mockResponse = isSuccess
+      //   ? { code: 200, message: '提交成功，等待管理员审核' }
+      //   : { code: 500, message: '模拟提交失败：服务器忙，请稍后再试' };
+
+      resolve(mockResponse)
+    }, 1500) // 1500ms = 1.5秒延迟
+  })
 }
 
 // 四、监听器

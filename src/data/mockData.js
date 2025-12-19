@@ -527,3 +527,175 @@ export const mockData = [
     url: 'https://www.overleaf.com'
   }
 ]
+
+export const mockComments = [
+  // ChatGPT (id: 8) 的评论 - 10条
+  {
+    id: 1001,
+    toolId: 8,
+    content: 'ChatGPT 真的改变了我的工作方式！作为一个程序员，它可以帮我调试代码、写文档，甚至重构代码。效率提升明显！',
+    userId: 101,
+    username: 'dev_master',
+    nickname: '编程大师',
+    avatar: 'https://fakeavatar.com/user101.jpg',
+    createdAt: '2024-01-15T10:30:00',
+    likes: 42,
+    isLiked: false
+  },
+  {
+    id: 1002,
+    toolId: 8,
+    content: '从 GPT-3.5 升级到 GPT-4，代码理解能力确实强了很多！特别是在处理复杂算法问题时，GPT-4 的准确性更高。',
+    userId: 102,
+    username: 'ai_researcher',
+    nickname: 'AI研究员',
+    avatar: 'https://fakeavatar.com/user102.jpg',
+    createdAt: '2024-01-14T14:20:00',
+    likes: 36,
+    isLiked: true
+  },
+  {
+    id: 1003,
+    toolId: 8,
+    content: '作为非英语母语者，ChatGPT 帮我润色英文邮件和文档，表达更专业了。商务沟通变得轻松多了！',
+    userId: 103,
+    username: 'business_writer',
+    nickname: '商务写手',
+    avatar: 'https://fakeavatar.com/user103.jpg',
+    createdAt: '2024-01-12T09:15:00',
+    likes: 28,
+    isLiked: false
+  },
+  {
+    id: 1004,
+    toolId: 8,
+    content: '学习新编程语言的好帮手！让 ChatGPT 用简单的例子解释概念，比看官方文档更易懂。👍',
+    userId: 104,
+    username: 'coding_newbie',
+    nickname: '编程新手',
+    avatar: 'https://fakeavatar.com/user104.jpg',
+    createdAt: '2024-01-10T16:45:00',
+    likes: 31,
+    isLiked: false
+  },
+  {
+    id: 1005,
+    toolId: 8,
+    content: 'Prompt Engineering 是关键！学会了写好的提示词后，ChatGPT 的输出质量大幅提升。推荐学习 prompt 技巧。',
+    userId: 105,
+    username: 'prompt_expert',
+    nickname: '提示词专家',
+    avatar: 'https://fakeavatar.com/user105.jpg',
+    createdAt: '2024-01-08T11:20:00',
+    likes: 45,
+    isLiked: true
+  },
+  {
+    id: 1006,
+    toolId: 8,
+    content: '订阅 ChatGPT Plus 很值得！优先访问、更快的响应速度，还有插件功能。工作流完全改变了。',
+    userId: 106,
+    username: 'tech_enthusiast',
+    nickname: '科技爱好者',
+    avatar: 'https://fakeavatar.com/user106.jpg',
+    createdAt: '2024-01-05T13:10:00',
+    likes: 39,
+    isLiked: false
+  },
+  {
+    id: 1007,
+    toolId: 8,
+    content: '帮我写博客文章、社交媒体内容，节省了大量时间。但需要仔细检查事实准确性，AI 有时会编造信息。',
+    userId: 107,
+    username: 'content_creator',
+    nickname: '内容创作者',
+    avatar: 'https://fakeavatar.com/user107.jpg',
+    createdAt: '2024-01-03T15:30:00',
+    likes: 22,
+    isLiked: true
+  },
+  {
+    id: 1008,
+    toolId: 8,
+    content: '代码调试神器！把错误信息贴给 ChatGPT，它能快速定位问题并给出解决方案。不过要注意别泄露敏感代码。',
+    userId: 108,
+    username: 'debug_master',
+    nickname: '调试大师',
+    avatar: 'https://fakeavatar.com/user108.jpg',
+    createdAt: '2024-01-02T10:15:00',
+    likes: 47,
+    isLiked: false
+  },
+  {
+    id: 1009,
+    toolId: 8,
+    content: '免费版已经很强大了，但高峰期经常需要排队。如果是重度用户，推荐升级到 Plus 版本。',
+    userId: 109,
+    username: 'power_user',
+    nickname: '重度用户',
+    avatar: 'https://fakeavatar.com/user109.jpg',
+    createdAt: '2023-12-28T09:45:00',
+    likes: 33,
+    isLiked: false
+  },
+  {
+    id: 1010,
+    toolId: 8,
+    content: 'ChatGPT 教我学习新概念，就像有个耐心的导师。特别是学习复杂理论时，让它用简单例子解释很有帮助。',
+    userId: 110,
+    username: 'lifelong_learner',
+    nickname: '终身学习者',
+    avatar: 'https://fakeavatar.com/user110.jpg',
+    createdAt: '2023-12-25T14:20:00',
+    likes: 29,
+    isLiked: true
+  }
+]
+// 根据工具Id获取相关评论的函数（模拟）
+export const getCommentsByToolId = (toolId) => {
+  // 过滤出指定工具ID的评论
+  const comments = mockComments.filter(comment => comment.toolId === parseInt(toolId))
+
+  return comments
+}
+
+// 添加评论的函数（模拟）
+export const addMockComment = (toolId, content) => {
+  const newId = Math.max(...mockComments.map(c => c.id)) + 1
+  const newComment = {
+    id: newId,
+    toolId: parseInt(toolId),
+    content: content,
+    userId: 1,
+    username: 'lycus',
+    nickname: '我的',
+    avatar: 'https://fakeavatar.com/user110.jpg',
+    createdAt: new Date().toISOString(),
+    likes: 0,
+    isLiked: false
+  }
+  mockComments.push(newComment)
+  return newComment
+}
+
+// 删除评论的函数（模拟）
+export const deleteMockComment = (commentId) => {
+  const index = mockComments.findIndex(c => c.id === parseInt(commentId))
+  if (index !== -1) {
+    mockComments.splice(index, 1)
+    return true
+  }
+  return false
+}
+
+// 点赞/取消点赞评论的函数（模拟）
+export const toggleLikeMockComment = (commentId) => {
+  const comment = mockComments.find(c => c.id === parseInt(commentId))
+  if (comment) {
+    const wasLiked = comment.isLiked
+    comment.isLiked = !wasLiked
+    comment.likes = wasLiked ? comment.likes - 1 : comment.likes + 1
+    return { success: true, isLiked: comment.isLiked, likes: comment.likes }
+  }
+  return { success: false }
+}

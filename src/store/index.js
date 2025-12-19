@@ -3,7 +3,7 @@ import { createStore } from 'vuex'
 export default createStore({
   state: {
     // 用户信息
-    userId: null,
+    userId: 1,
     username: '',
     nickname: '',
     email: '',
