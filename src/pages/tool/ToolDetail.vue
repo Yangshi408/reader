@@ -244,8 +244,138 @@
     </div>
   </div>
   <!-- 加载状态 -->
-  <div v-else-if="isLoading" class="flex items-center justify-center h-64">
-    <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+  <div v-else-if="isLoading" class="max-w-5xl mx-auto">
+    <!-- 工具信息骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
+      <div class="flex gap-8 items-start">
+        <!-- 左侧图标区域 -->
+        <div class="flex flex-col items-center gap-4 min-w-[120px]">
+          <div class="w-28 h-28 rounded-3xl bg-gray-200"></div>
+          <div class="flex gap-6">
+            <div class="flex flex-col items-center">
+              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
+              <div class="h-3 w-8 bg-gray-200 rounded"></div>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
+              <div class="h-3 w-8 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="flex-1">
+          <!-- 标签骨架 -->
+          <div class="flex gap-3 mb-4">
+            <div class="w-16 h-6 bg-gray-200 rounded"></div>
+            <div class="w-12 h-6 bg-gray-200 rounded"></div>
+            <div class="w-20 h-6 bg-gray-200 rounded"></div>
+          </div>
+
+          <!-- 标题骨架 -->
+          <div class="h-8 bg-gray-300 rounded mb-4 max-w-md"></div>
+
+          <!-- 描述骨架 -->
+          <div class="space-y-2 mb-6">
+            <div class="h-4 bg-gray-200 rounded"></div>
+            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+          </div>
+
+          <!-- 标签骨架 -->
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-8 h-4 bg-gray-200 rounded"></div>
+            <div class="flex gap-2">
+              <div class="w-16 h-6 bg-gray-200 rounded-full"></div>
+              <div class="w-12 h-6 bg-gray-200 rounded-full"></div>
+              <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
+            </div>
+          </div>
+
+          <!-- 按钮骨架 -->
+          <div class="w-32 h-10 bg-gray-300 rounded-lg"></div>
+          <div class="w-48 h-3 bg-gray-200 rounded mt-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用说明骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-blue-200 rounded"></div>
+        <div class="h-6 w-24 bg-gray-300 rounded"></div>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 rounded"></div>
+          <div class="h-4 bg-gray-200 rounded w-11/12"></div>
+          <div class="h-4 bg-gray-200 rounded w-10/12"></div>
+          <div class="h-4 bg-gray-200 rounded w-9/12"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 评论区域骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-gray-300 rounded"></div>
+        <div class="h-6 w-16 bg-gray-300 rounded"></div>
+        <div class="h-4 w-8 bg-gray-200 rounded"></div>
+      </div>
+
+      <!-- 排序和分页骨架 -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-4">
+          <div class="h-4 w-16 bg-gray-200 rounded"></div>
+          <div class="w-32 h-8 bg-gray-200 rounded"></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-16 h-8 bg-gray-200 rounded"></div>
+          <div class="w-20 h-4 bg-gray-200 rounded"></div>
+          <div class="w-16 h-8 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+
+      <!-- 评论列表骨架 -->
+      <div class="space-y-6 mb-8">
+        <div v-for="i in 2" :key="i" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gray-300"></div>
+              <div class="space-y-2">
+                <div class="h-4 w-24 bg-gray-300 rounded"></div>
+                <div class="h-3 w-16 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-6 bg-gray-200 rounded"></div>
+              <div class="w-6 h-6 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div class="space-y-2 mt-4">
+            <div class="h-3 bg-gray-200 rounded w-full"></div>
+            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 发表评论骨架 -->
+      <div class="mt-8">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
+          <div class="flex-1">
+            <div class="w-full h-24 bg-gray-100 rounded-lg"></div>
+            <div class="flex justify-between items-center mt-3">
+              <div class="w-12 h-3 bg-gray-200 rounded"></div>
+              <div class="w-24 h-8 bg-gray-300 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -331,7 +461,8 @@ const goToToolsListByTag = (tagId) => {
 // 3. 检测该用户是否收藏
 const checkCollectionStatus = async (toolId) => {
   try {
-    const response = await HttpManager.getUserCollection()
+    // const response = await HttpManager.getUserCollection()
+    const response = await mockGetUserCollection() // 模拟
     isCollected.value = response.data?.some(item =>
       item.resourceId === parseInt(toolId) && item.resourceType === 'tool'
     )
@@ -347,12 +478,68 @@ const handleCollect = async () => {
   }
 
   try {
-    await toolsStore.toggleToolCollection(tool.value.id)
+    if (isCollected.value) {
+      // 取消收藏
+      // await HttpManager.removeToolCollection(tool.value.id, 'tool')
+      await mockRemoveToolCollection(tool.value.id, 'tool') // 模拟
+    } else {
+      // 添加收藏
+      // await HttpManager.toggleToolCollection(tool.value.id, 'tool')
+      await mockToggleToolCollection(tool.value.id, 'tool') // 模拟
+    }
+
+    // 更新收藏状态
     isCollected.value = !isCollected.value
     ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
   } catch (error) {
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error(error.message || '切换收藏状态操作失败')
   }
+}
+// 为方法4提供的收藏模拟
+let mockUserCollection = []
+const mockGetUserCollection = async () => {
+  return new Promise((resolve) => {
+    // 模拟网络延迟（500毫秒，贴近真实接口体验）
+    setTimeout(() => {
+      // 返回和真实接口结构一致的响应数据
+      resolve({
+        code: 200,
+        data: mockUserCollection, // 包含用户收藏列表
+        message: '获取收藏列表成功'
+      })
+    }, 500)
+  })
+}
+const mockRemoveToolCollection = async (resourceId, resourceType) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // 从模拟收藏列表中删除对应资源
+      mockUserCollection = mockUserCollection.filter(
+        item => !(item.resourceId === resourceId && item.resourceType === resourceType)
+      )
+      resolve({
+        code: 200,
+        message: '取消收藏成功'
+      })
+    }, 500)
+  })
+}
+const mockToggleToolCollection = async (resourceId, resourceType) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // 向模拟收藏列表中添加对应资源（避免重复添加，虽然原逻辑已判断，但模拟后端做一层防护）
+      const isExist = mockUserCollection.some(
+        item => item.resourceId === resourceId && item.resourceType === resourceType
+      )
+      if (!isExist) {
+        mockUserCollection.push({ resourceId, resourceType })
+      }
+      resolve({
+        code: 200,
+        message: '收藏成功'
+      })
+    }, 500)
+  })
 }
 // 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
@@ -442,7 +629,6 @@ const submitComment = async () => {
     submittingComment.value = false
   }
 }
-
 // 8. 删除评论
 const handleDeleteComment = async (commentId) => {
   try {
@@ -483,7 +669,6 @@ const handleDeleteComment = async (commentId) => {
     }
   }
 }
-
 // 9. 点赞/取消点赞评论
 const handleLikeComment = async (commentId) => {
   if (!isAuthenticated.value) {

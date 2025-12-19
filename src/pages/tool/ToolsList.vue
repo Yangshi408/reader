@@ -9,15 +9,44 @@
       </div>
       <!-- 头部搜索框 -->
       <div class="relative w-full max-w-xl group">
-        <input v-model="searchInput" @keyup.enter="handleSearch" type="text" placeholder="搜索想要的神器..."
-          class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
-        <i @click="handleSearch" class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+        <input v-model="searchInput" @keyup.enter="handleSearch" @input="handleInputChange" type="text"
+              placeholder="搜索想要的神器..."
+              class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
+        <!-- 搜索图标 -->
+        <div v-if="!isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
+          <i @click="handleSearch"
+            class="fas fa-search text-gray-400 cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+        </div>
+        <!-- 搜索时的加载图标（替换搜索图标） -->
+        <div v-if="isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
+          <i class="fas fa-spinner fa-spin text-blue-500"></i>
+        </div>
         <!-- 搜索成功后的提示框 -->
-        <div v-if="hasSearched"
-          class="absolute top-14 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down">
+        <div v-if="hasSearched && !isSearching"
+            class="absolute top-14 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down z-10">
           <i class="fas fa-info-circle mr-2"></i>
           "{{ searchInput }}" 的搜索结果如下：
           <span class="ml-2 text-xs text-blue-400 cursor-pointer hover:underline" @click="clearSearch">清除搜索</span>
+        </div>
+        <!-- 搜索时的加载动画（悬浮效果） -->
+        <div v-if="isSearching"
+            class="absolute top-14 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 animate-fade-in">
+          <div class="flex flex-col items-center justify-center">
+            <!-- 波浪动画 -->
+            <div class="flex items-center justify-center space-x-1 mb-3">
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.1s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.3s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.4s"></div>
+            </div>
+
+            <!-- 文字提示 -->
+            <p class="text-sm text-gray-600 font-medium">
+              正在搜索 "{{ searchInput }}"...
+            </p>
+            <p class="text-xs text-gray-400 mt-1">请稍等片刻</p>
+          </div>
         </div>
       </div>
       <!-- 筛选和用户菜单 -->
@@ -185,8 +214,12 @@ const {
 } = storeToRefs(toolsStore)
 
 // 一、变量声明
+// 1. 搜索
 const searchInput = ref('')
 const hasSearched = ref(false) // 是否使用搜索功能
+const isSearching = ref(false)
+// let inputTimeout = null // 用于防抖的触发器
+
 const showFilter = ref(false)
 const showUserMenu = ref(false)
 const activeToolId = ref(null)
@@ -245,6 +278,7 @@ const handleMouseLeave = (toolId) => {
 }
 // 3. 搜索功能
 const handleSearch = async () => {
+  isSearching.value = true
   const query = searchInput.value.trim()
   if (query) {
     try {
@@ -252,20 +286,32 @@ const handleSearch = async () => {
       hasSearched.value = true
     } catch (error) {
       ElMessage.error('搜索失败')
+    } finally {
+      isSearching.value = false
     }
   }
 }
-// 4. 清空搜索框
+// 4.处理输入变化，具有防抖功能（防抖功能用于日后扩展）
+const handleInputChange = () => {
+  hasSearched.value = false
+  // 如果希望输入完成后才执行某些操作，可以添加防抖
+  // clearTimeout(inputTimeout)
+  // inputTimeout = setTimeout(() => {
+  //   // 这里可以执行一些操作，比如自动搜索
+  //   // autoSearch()
+  // }, 300)
+}
+// 5. 清空搜索框
 const clearSearch = () => {
   searchInput.value = ''
   hasSearched.value = false
   searchResults.value = []
 }
-// 5. 清空已选标签
+// 6. 清空已选标签
 const clearTagFilters = () => {
   activeFilters.value.tags = []
 }
-// 6. 根据类别获取工具
+// 7. 根据类别获取工具
 const getToolsByCategory = (cat) => {
   let list = []
   if (hasSearched.value) { // 是否进行搜索
@@ -279,7 +325,7 @@ const getToolsByCategory = (cat) => {
   list = toolsList.value?.filter(t => t.category === cat)
   return filterToolList(list) // 最后还需要对工具列表使用筛选功能
 }
-// 7. 筛选逻辑，分别作用于各个category下
+// 8. 筛选逻辑，分别作用于各个category下
 const filterToolList = (list) => {
   // 排序
   if (activeFilters.value.sort === '最多浏览') {
@@ -293,7 +339,7 @@ const filterToolList = (list) => {
   }
   return list
 }
-// 8. 访问详情页
+// 9. 访问详情页
 const goToDetail = async (id) => {
   if (tooltipTimers.value[id]) {
     clearTimeout(tooltipTimers.value[id])
@@ -304,11 +350,11 @@ const goToDetail = async (id) => {
   router.push({ name: 'ToolDetail', params: { id } })
 }
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
-// 9. 进入登录页面
+// 10. 进入登录页面
 const goToLogin = () => {
   router.push({ name: 'Login' })
 }
-// 10. 退出登录
+// 11. 退出登录
 const handleLogout = async () => {
   try {
     await toolsStore.logout()
@@ -318,7 +364,7 @@ const handleLogout = async () => {
     ElMessage.error('退出登录失败')
   }
 }
-// 11. 辅助：关闭下拉菜单
+// 12. 辅助：关闭下拉菜单
 const filterRef = ref(null)
 const avatarRef = ref(null)
 const closeDropdowns = (e) => {
@@ -384,18 +430,6 @@ onUnmounted(() => {
   animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes popIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -449,5 +483,60 @@ onUnmounted(() => {
   transform: translateY(0);
   transition-delay: 0.5s;
   /* 与JS延迟保持一致 */
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-wave {
+  animation: wave 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
 }
 </style>
