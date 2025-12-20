@@ -15,6 +15,7 @@
     </div>
     <div class="flex gap-6 items-start">
       <div class="flex-1 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg border border-white/60">
+        <!-- 左侧内容保持不变 -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">图标:</label>
           <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
@@ -55,56 +56,162 @@
           <textarea v-model="form.fullDesc" placeholder="工具使用说明..." class="w-full h-40 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus:border-blue-500 outline-none resize-none text-gray-700"></textarea>
         </div>
       </div>
-      <div class="w-80">
-        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24">
+
+      <!-- 右侧边栏 - 优化布局 -->
+      <div class="w-80 flex-shrink-0">
+        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24 flex flex-col h-[38.2rem]">
           <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-cog"></i> 工具选项
           </h4>
-          <div class="mb-4">
-            <label class="text-xs text-gray-500 mb-1 block">分类</label>
-            <div class="relative">
-              <select v-model="form.category" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 appearance-none outline-none focus:border-blue-500">
-                <option value="" disabled selected>选择分类</option>
-                <option v-for="cat in ['软件开发', '项目协作', '个人提升', '论文阅读']" :key="cat" :value="cat">{{ cat }}</option>
-              </select>
-              <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 text-xs pointer-events-none"></i>
+
+          <!-- 可滚动区域 -->
+          <div class="flex-1 overflow-y-auto pr-1">
+            <div class="mb-4">
+              <label class="text-xs text-gray-500 mb-1 block">分类</label>
+              <div class="relative">
+                <select v-model="form.category" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 appearance-none outline-none focus:border-blue-500 text-sm">
+                  <option value="" disabled selected>选择分类</option>
+                  <option v-for="cat in ['软件开发', '项目协作', '个人提升', '论文阅读']" :key="cat" :value="cat">{{ cat }}</option>
+                </select>
+                <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="text-xs text-gray-500 mb-2 block">内/外部工具</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" v-model="form.type" value="internal" class="accent-blue-600">
+                  <span class="text-sm">内部工具</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" v-model="form.type" value="external" class="accent-blue-600">
+                  <span class="text-sm">外部工具</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="text-xs text-gray-500 mb-2 block">标签选择（至少选择一个）</label>
+
+              <!-- 标签搜索 -->
+              <div class="mb-3">
+                <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                  <i class="fas fa-search text-gray-400 text-xs"></i>
+                  <input
+                    v-model="tagSearch"
+                    type="text"
+                    placeholder="搜索标签..."
+                    class="bg-transparent border-none outline-none flex-1 text-xs placeholder-gray-400"
+                  >
+                </div>
+              </div>
+
+              <!-- 标签分组区域 - 设置固定高度并允许滚动 -->
+              <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <div class="max-h-64 overflow-y-auto p-3">
+                  <!-- 简化显示，不分组，只展示过滤后的标签 -->
+                  <div class="flex flex-wrap gap-2">
+                    <label
+                      v-for="tag in filteredTags"
+                      :key="tag.id"
+                      :class="[
+                        'cursor-pointer transition-all duration-200',
+                        'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
+                        selectedTags.includes(tag.id)
+                          ? tag.color + ' border-transparent'
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                      ]"
+                    >
+                      <input
+                        type="checkbox"
+                        v-model="selectedTags"
+                        :value="tag.id"
+                        class="sr-only"
+                        @change="handleTagChange"
+                      >
+                      <span class="flex items-center gap-1">
+                        {{ tag.name }}
+                        <span v-if="tag.id === 'general'" class="text-[10px] text-gray-500">(必选)</span>
+                      </span>
+                      <i
+                        v-if="selectedTags.includes(tag.id)"
+                        class="fas fa-check text-[10px] ml-1"
+                      ></i>
+                    </label>
+                  </div>
+
+                  <!-- 无匹配标签提示 -->
+                  <div v-if="filteredTags.length === 0" class="text-center py-4 text-gray-400 text-xs">
+                    未找到匹配的标签
+                  </div>
+                </div>
+              </div>
+
+              <!-- 已选标签展示 -->
+              <div v-if="selectedTags.length > 0" class="mt-3">
+                <div class="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                  <i class="fas fa-tags text-xs"></i>
+                  <span>已选标签 ({{ selectedTags.length }}个)</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="tagId in selectedTags"
+                    :key="tagId"
+                    :class="[
+                      'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs',
+                      getTagById(tagId).color
+                    ]"
+                  >
+                    {{ getTagById(tagId).name }}
+                    <i
+                      v-if="tagId !== 'general'"
+                      @click="removeTag(tagId)"
+                      class="fas fa-times text-[10px] cursor-pointer hover:scale-110 transition-transform"
+                    ></i>
+                  </span>
+                </div>
+              </div>
+
+              <!-- 提示信息 -->
+              <div class="mt-3 text-xs text-gray-400">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                请至少选择一个标签
+                <div v-if="!selectedTags.includes('general')" class="text-red-500 font-medium mt-1">
+                  ⚠️ 必须包含"通用"标签
+                </div>
+              </div>
             </div>
           </div>
-          <div class="mb-4">
-            <label class="text-xs text-gray-500 mb-2 block">内/外部工具</label>
-            <div class="flex gap-4">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="radio" v-model="form.type" value="internal" class="accent-blue-600">
-                <span class="text-sm">内部工具</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="radio" v-model="form.type" value="external" class="accent-blue-600">
-                <span class="text-sm">外部工具</span>
-              </label>
-            </div>
+
+          <!-- 提交按钮 - 固定在底部 -->
+          <div class="pt-4 border-t border-gray-100">
+            <button @click="submit" :disabled="isSubmitting" class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-100 disabled:shadow-none disabled:opacity-70">
+              <i class="fas fa-file-export"></i> 提交审核
+            </button>
           </div>
-          <div class="mb-6">
-            <label class="text-xs text-gray-500 mb-1 block">标签</label>
-            <input v-model="form.tagInput" placeholder="输入标签" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm mb-2">
-            <p class="text-xs text-gray-400"><i class="fas fa-exclamation-circle"></i> 填写标签，每个标签用逗号隔开</p>
-          </div>
-          <button @click="submit" class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2">
-            <i class="fas fa-file-export"></i> 提交审核
-          </button>
         </div>
       </div>
     </div>
   </div>
 </template>
-<!-- 修改 ToolSubmit.vue 的 script 部分 -->
+
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
+import { predefinedTags } from '@/data/tags'
+import { storeToRefs } from 'pinia'
+// import { HttpManager } from '@/api'
 
 const toolsStore = useToolsStore()
-const isAnalyzing = ref(false)
 
+const {
+  isAuthenticated // 是否登录
+} = storeToRefs(toolsStore)
+
+// 一、响应式数据定义
+const isAnalyzing = ref(false)
 const form = reactive({
   name: '',
   url: '',
@@ -112,29 +219,78 @@ const form = reactive({
   desc: '',
   fullDesc: '',
   category: '',
-  type: 'external',
-  tagInput: ''
+  type: 'external'
 })
-
+const isSubmitting = ref(false)
+// 标签相关状态
+const tagSearch = ref('')
+const selectedTags = ref(['general'])
 // 表单验证
 const formErrors = reactive({})
-// const isFormValid = computed(() => {
-//   return form.name.trim() &&
-//          form.url.trim() &&
-//          form.category &&
-//          form.desc.trim() &&
-//          form.desc.length <= 80
-// })
 
+// 二、计算属性
+// 1. 通过搜索过滤后的标签，未搜索时显示常用标签
+const filteredTags = computed(() => {
+  const searchTerm = tagSearch.value.toLowerCase()
+
+  if (searchTerm) {
+    return predefinedTags.filter(tag =>
+      tag.name.toLowerCase().includes(searchTerm) ||
+      tag.id.toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // 无搜索时，只显示常用标签
+  const commonTags = ['general', 'web', 'desktop', 'mobile', 'open-source', 'free', 'paid', 'frontend', 'backend']
+  return predefinedTags.filter(tag => commonTags.includes(tag.id))
+})
+
+// 三、方法
+// 1. 根据标签Id获取标签（主要目的是获取标签的css样式）
+const getTagById = (tagId) => {
+  return predefinedTags.find(tag => tag.id === tagId) || { name: tagId, color: 'bg-gray-100' }
+}
+// 2. 标签选择变更时激活的函数（绑定方法）
+const handleTagChange = () => {
+  // 确保至少有一个标签被选中
+  if (selectedTags.value.length === 0) {
+    selectedTags.value = ['general']
+    ElMessage.warning('请至少选择一个标签')
+  }
+}
+// 3. 取消选择标签
+const removeTag = (tagId) => {
+  if (tagId === 'general') {
+    ElMessage.warning('"通用"标签是必选项，不能移除')
+    return
+  }
+
+  if (selectedTags.value.length <= 1) {
+    ElMessage.warning('请至少保留一个标签')
+    return
+  }
+
+  selectedTags.value = selectedTags.value.filter(id => id !== tagId)
+}
+// 4. 表单验证
 const validateForm = () => {
   formErrors.name = !form.name.trim() ? '请输入工具名称' : ''
   formErrors.url = !form.url.trim() ? '请输入工具链接' : ''
   formErrors.category = !form.category ? '请选择分类' : ''
   formErrors.desc = !form.desc.trim() ? '请输入简介' : form.desc.length > 80 ? '简介不能超过80字' : ''
 
+  // 标签验证
+  if (selectedTags.value.length === 0) {
+    formErrors.tags = '请至少选择一个标签'
+  } else if (!selectedTags.value.includes('general')) {
+    formErrors.tags = '必须包含"通用"标签'
+  } else {
+    formErrors.tags = ''
+  }
+
   return !Object.values(formErrors).some(error => error)
 }
-
+// 5. 自动填充（未实现，后续需要调用AI + 爬虫）
 const handleAutoFill = async () => {
   if (!form.url.trim()) {
     ElMessage.warning('请先填写链接')
@@ -155,31 +311,116 @@ const handleAutoFill = async () => {
     isAnalyzing.value = false
   }
 }
-
+// 6. 提交
 const submit = async () => {
-  if (!validateForm()) {
-    ElMessage.error('请完善必填信息')
-    return
-  }
-
   try {
-    const result = await toolsStore.submitTool(form)
+    if (!validateForm()) {
+      ElMessage.error('请完善必填信息')
+      return
+    }
+    if (!isAuthenticated.value) {
+      throw new Error('请先登录')
+    }
+    isSubmitting.value = true // 开启加载状态
 
-    if (result.success) {
-      ElMessage.success(result.message)
+    // 准备数据
+    const submitData = {
+      ...form, // 解包获取副本，对于引用类型非常需要注意的地方（但是仅是浅拷贝，不过好在form的属性中无引用类型）
+      tags: [...selectedTags.value] // 数组也是引用类型，需要解包
+    }
+    // 验证标签
+    if (submitData.tags.length === 0) {
+      throw new Error('请至少选择一个标签')
+    }
+
+    // const response = await HttpManager.submitTool(submitData)
+    const response = await mockSubmitTool(submitData)
+
+    if (response.code === 200) {
+      ElMessage.success(response.message || '提交成功，等待管理员审核')
+
       // 重置表单
       Object.keys(form).forEach(key => {
-        if (key !== 'type') form[key] = ''
+        form[key] = ''
       })
+      form.type = 'external'
+      selectedTags.value = ['general']
+      tagSearch.value = ''
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(response.message || '提交失败')
     }
   } catch (error) {
-    ElMessage.error('提交失败')
+    ElMessage.error(error.message || '提交失败')
+  } finally {
+    isSubmitting.value = false
   }
 }
+// 为方法6模拟后端API请求使用
+const mockSubmitTool = async (submitData) => {
+  // 返回一个Promise，模拟异步请求
+  return new Promise((resolve) => {
+    // 模拟网络延迟（1.5秒）
+    setTimeout(() => {
+      // 模拟响应数据（默认成功，也可以添加随机逻辑模拟失败）
+      // 如需模拟失败，可将code改为非200，比如：{ code: 500, message: '服务器内部错误' }
+      const mockResponse = {
+        code: 200,
+        message: '提交成功，等待管理员审核'
+      }
+
+      // 【可选】添加随机成功/失败逻辑，更贴近真实场景
+      // const isSuccess = Math.random() > 0.2; // 80%成功率
+      // const mockResponse = isSuccess
+      //   ? { code: 200, message: '提交成功，等待管理员审核' }
+      //   : { code: 500, message: '模拟提交失败：服务器忙，请稍后再试' };
+
+      resolve(mockResponse)
+    }, 1500) // 1500ms = 1.5秒延迟
+  })
+}
+
+// 四、监听器
+// 1. 工具分类自动推荐标签
+watch(() => form.category, (newCategory) => {
+  if (newCategory) {
+    // 根据分类推荐标签
+    const categoryTagsMap = {
+      软件开发: ['web', 'ide', 'editor', 'frontend', 'backend', 'open-source'],
+      项目协作: ['web', 'team', 'productivity'],
+      个人提升: ['learning', 'productivity', 'mobile'],
+      论文阅读: ['research', 'academic', 'pdf']
+    }
+
+    const recommended = categoryTagsMap[newCategory] || []
+
+    // 保留已选标签，添加推荐的标签（不重复）
+    recommended.forEach(tagId => {
+      if (!selectedTags.value.includes(tagId) && predefinedTags.some(tag => tag.id === tagId)) {
+        selectedTags.value.push(tagId)
+      }
+    })
+  }
+})
 </script>
 
 <style scoped>
 @import '../../index.css';
+
+/* ::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+} */
 </style>

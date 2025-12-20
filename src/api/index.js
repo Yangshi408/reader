@@ -41,14 +41,19 @@ const HttpManager = {
   addToolView: (resourceId) => post(`tools/${resourceId}/views`),
   toggleToolCollection: (resourceId, resourceType) => post(`tools/${resourceId}/collections`, { resourceType }),
   removeToolCollection: (resourceId, resourceType) => deletes(`tools/${resourceId}/collections`, { resourceType }),
-  addToolComment: (resourceId, resourceType, params) => post(`tools/${resourceId}/comments`, { resourceType, ...params }),
-  deleteToolComment: (resourceId) => deletes(`tools/${resourceId}/comments`),
+  // addToolComment: (resourceId, resourceType, params) => post(`tools/${resourceId}/comments`, { resourceType, ...params }),
+  // deleteToolComment: (resourceId) => deletes(`tools/${resourceId}/comments`),
   addToolCommentReply: (resourceId, commentId, resourceType, params) =>
     post(`tools/${resourceId}/comments/${commentId}/reply`, { resourceType, ...params }),
   deleteToolCommentReply: (resourceId, commentId) =>
     deletes(`tools/${resourceId}/comments/${commentId}/reply`),
   toggleToolLike: (resourceId) => post(`tools/${resourceId}/like`),
   removeToolLike: (resourceId) => deletes(`tools/${resourceId}/like`),
+  // 新增
+  getToolComments: (toolId) => get(`tools/${toolId}/comments`), // 获取工具所有评论
+  addToolComment: (toolId, params) => post(`tools/${toolId}/comments`, params), // 发表评论，需要修改，应该还要传用户Id
+  deleteToolComment: (toolId, commentId) => deletes(`tools/${toolId}/comments/${commentId}`), // 删除评论
+  toggleCommentLike: (toolId, commentId) => post(`tools/${toolId}/comments/${commentId}/like`), // 点赞/取消点赞评论
 
   // =======================> 课程 API
   getCourses: (params) => get('courses/profile', params),

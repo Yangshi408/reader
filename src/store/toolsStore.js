@@ -3,20 +3,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { HttpManager } from '@/api'
 import { mockData } from '@/data/mockData'
+import { predefinedTags } from '@/data/tags'
 import vuexStore from '@/store/index'
 
 export const useToolsStore = defineStore('tools', () => {
   // ============ State ============
   const toolsList = ref([])
   const categories = ref([])
-  // const user = ref({
-  //   isLogin: true,
-  //   avatar: 'https://ui-avatars.com/api/?name=Guest',
-  //   name: '访客用户',
-  //   email: '',
-  //   token: null,
-  //   id: null
-  // })
   const isLoading = ref(false)
   const pagination = ref({
     page: 1,
@@ -45,30 +38,39 @@ export const useToolsStore = defineStore('tools', () => {
     })
     return grouped
   })
-  // 2. 获取所有标签
-  const allTags = computed(() => {
-    const tags = new Set()
-    toolsList.value.forEach(tool => {
-      tool.tags?.forEach(tag => tags.add(tag))
-    })
-    return Array.from(tags)
+  // 2. 按类型分组的标签（用于筛选面板）
+  const tagsByCategory = computed(() => {
+    return {
+      平台: predefinedTags?.filter(tag =>
+        ['web', 'desktop', 'mobile', 'cross-platform'].includes(tag.id)
+      ),
+      操作系统: predefinedTags?.filter(tag =>
+        ['windows', 'macos', 'linux', 'ios', 'android'].includes(tag.id)
+      ),
+      技术栈: predefinedTags?.filter(tag =>
+        ['javascript', 'python', 'java', 'csharp', 'cpp', 'php', 'go', 'rust'].includes(tag.id)
+      ),
+      工具类型: predefinedTags?.filter(tag =>
+        ['ide', 'editor', 'cli', 'api', 'debug', 'test', 'design'].includes(tag.id)
+      ),
+      用途领域: predefinedTags?.filter(tag =>
+        ['frontend', 'backend', 'database', 'devops', 'ai-ml', 'data-science', 'web3', 'game-dev'].includes(tag.id)
+      ),
+      许可证价格: predefinedTags?.filter(tag =>
+        ['open-source', 'free', 'freemium', 'paid', 'subscription'].includes(tag.id)
+      ),
+      其他: predefinedTags?.filter(tag =>
+        ['general', 'new', 'popular', 'official', 'community'].includes(tag.id)
+      )
+    }
   })
+
   // 3. 当前用户是否已登录
   // const isAuthenticated = computed(() => vuexStore.getters.isLoggedIn)
   const isAuthenticated = ref(true)
 
   // 4. 用户信息
   const userInfo = computed(() => vuexStore.getters.userInfo)
-  // userInfo: state => ({
-  //     id: state.userId,
-  //     username: state.username,
-  //     nickname: state.nickname,
-  //     email: state.email,
-  //     avatar: state.avatar,
-  //     role: state.role,
-  //     description: state.description,
-  //     facePhoto: state.facePhoto
-  //   }),
 
   // ============ Actions ============
   // 1. 初始化认证状态：调用 Vuex 的检查登录状态
@@ -239,6 +241,10 @@ export const useToolsStore = defineStore('tools', () => {
       activeFilters.value.tags.push(tag)
     }
   }
+  // (3) 清空标签（通用除外）
+  const clearTags = () => {
+    activeFilters.value.tags = []
+  }
 
   // 4. 获取工具详情
   const getToolDetail = async (toolId) => {
@@ -268,6 +274,11 @@ export const useToolsStore = defineStore('tools', () => {
       await HttpManager.addToolView(toolId)
     } catch (error) {
       console.error('增加浏览量失败:', error)
+      // 模拟增加浏览量
+      console.log('原始浏览量：', mockData.find(i => i.id === toolId).views)
+      const targetTool = toolsList.value.find(tool => tool.id === toolId)
+      targetTool.views += 1
+      console.log('新浏览量：', mockData.find(i => i.id === toolId).views)
     }
   }
 
@@ -300,41 +311,7 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
-  // 7. 提交工具
-  const submitTool = async (formData) => {
-    try {
-      if (!isAuthenticated.value) {
-        throw new Error('请先登录')
-      }
-
-      const formattedData = {
-        name: formData.name,
-        url: formData.url,
-        logo: formData.icon,
-        desc: formData.desc,
-        fullDesc: formData.fullDesc,
-        category: formData.category,
-        type: formData.type,
-        tags: formData.tagInput?.split(',').map(tag => tag.trim()).filter(tag => tag) || []
-      }
-
-      const response = await HttpManager.submitTool(formattedData)
-
-      if (response.code === 200) {
-        return { success: true, message: response.message || '提交成功，等待管理员审核' }
-      } else {
-        return { success: false, message: response.message || '提交失败' }
-      }
-    } catch (error) {
-      console.error('提交工具失败:', error)
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || '提交失败'
-      }
-    }
-  }
-
-  // 8. AI分析链接（需要根据实际情况调整）
+  // 7. AI分析链接（需要根据实际情况调整）
   const analyzeUrl = async (url) => {
     try {
       // 这里需要根据实际API调整
@@ -351,41 +328,41 @@ export const useToolsStore = defineStore('tools', () => {
   }
 
   // 加载更多工具
-  const loadMoreTools = async () => {
-    if (!pagination.value.hasMore || isLoading.value) return
+  // const loadMoreTools = async () => {
+  //   if (!pagination.value.hasMore || isLoading.value) return
 
-    pagination.value.page++
-    isLoading.value = true
+  //   pagination.value.page++
+  //   isLoading.value = true
 
-    try {
-      const response = await HttpManager.getTools({
-        page: pagination.value.page,
-        limit: pagination.value.limit
-      })
+  //   try {
+  //     const response = await HttpManager.getTools({
+  //       page: pagination.value.page,
+  //       limit: pagination.value.limit
+  //     })
 
-      if (response.code === 200) {
-        const newTools = response.data?.list || response.data || []
-        toolsList.value = [...toolsList.value, ...newTools]
-        pagination.value.hasMore = response.data?.hasMore || false
-      }
-    } catch (error) {
-      console.error('加载更多失败:', error)
-      pagination.value.page-- // 回滚页码
-    } finally {
-      isLoading.value = false
-    }
-  }
+  //     if (response.code === 200) {
+  //       const newTools = response.data?.list || response.data || []
+  //       Object.assign(toolsList.value, newTools)
+  //       pagination.value.hasMore = response.data?.hasMore || false
+  //     }
+  //   } catch (error) {
+  //     console.error('加载更多失败:', error)
+  //     pagination.value.page-- // 回滚页码
+  //   } finally {
+  //     isLoading.value = false
+  //   }
+  // }
 
   // 重置工具列表
-  const resetToolsList = () => {
-    toolsList.value = []
-    pagination.value = {
-      page: 1,
-      limit: 20,
-      total: 0,
-      hasMore: true
-    }
-  }
+  // const resetToolsList = () => {
+  //   toolsList.value = []
+  //   pagination.value = {
+  //     page: 1,
+  //     limit: 20,
+  //     total: 0,
+  //     hasMore: true
+  //   }
+  // }
 
   return {
     // State
@@ -400,8 +377,8 @@ export const useToolsStore = defineStore('tools', () => {
 
     // Getters
     toolsByCategory,
-    allTags,
     isAuthenticated,
+    tagsByCategory,
 
     // Actions
     initAuth,
@@ -415,12 +392,12 @@ export const useToolsStore = defineStore('tools', () => {
     searchTools,
     toggleSort,
     toggleTag,
+    clearTags,
     getToolDetail,
     addToolView,
     toggleToolCollection,
-    submitTool,
-    analyzeUrl,
-    loadMoreTools,
-    resetToolsList
+    analyzeUrl
+    // loadMoreTools,
+    // resetToolsList
   }
 })
