@@ -1,0 +1,542 @@
+<template>
+  <div class="space-y-8 relative">
+    <header class="flex justify-between items-center sticky top-0 z-40 py-4 glass-header rounded-2xl px-6 mb-8">
+      <!-- 主页按钮 -->
+      <div>
+        <router-link to="/home" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+          <i class="fas fa-home"></i> 主页
+        </router-link>
+      </div>
+      <!-- 头部搜索框 -->
+      <div class="relative w-full max-w-xl group">
+        <input v-model="searchInput" @keyup.enter="handleSearch" @input="handleInputChange" type="text"
+              placeholder="搜索想要的神器..."
+              class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
+        <!-- 搜索图标 -->
+        <div v-if="!isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
+          <i @click="handleSearch"
+            class="fas fa-search text-gray-400 cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+        </div>
+        <!-- 搜索时的加载图标（替换搜索图标） -->
+        <div v-if="isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
+          <i class="fas fa-spinner fa-spin text-blue-500"></i>
+        </div>
+        <!-- 搜索成功后的提示框 -->
+        <div v-if="hasSearched && !isSearching"
+            class="absolute top-14 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down z-10">
+          <i class="fas fa-info-circle mr-2"></i>
+          "{{ searchInput }}" 的搜索结果如下：
+          <span class="ml-2 text-xs text-blue-400 cursor-pointer hover:underline" @click="clearSearch">清除搜索</span>
+        </div>
+        <!-- 搜索时的加载动画（悬浮效果） -->
+        <div v-if="isSearching"
+            class="absolute top-14 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 animate-fade-in">
+          <div class="flex flex-col items-center justify-center">
+            <!-- 波浪动画 -->
+            <div class="flex items-center justify-center space-x-1 mb-3">
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.1s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.3s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.4s"></div>
+            </div>
+
+            <!-- 文字提示 -->
+            <p class="text-sm text-gray-600 font-medium">
+              正在搜索 "{{ searchInput }}"...
+            </p>
+            <p class="text-xs text-gray-400 mt-1">请稍等片刻</p>
+          </div>
+        </div>
+      </div>
+      <!-- 筛选和用户菜单 -->
+      <!-- 筛选 -->
+      <div class="flex items-center gap-6">
+        <div class="relative" ref="filterRef">
+          <button @click="showFilter = !showFilter"
+            class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+            <i class="fas fa-sliders-h"></i> 筛选
+          </button>
+          <div v-if="showFilter" class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in max-h-[70vh] overflow-y-auto">
+            <!-- 排序 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
+              <div class="flex gap-2">
+                <button v-for="sort in ['最多浏览', '最多收藏']" :key="sort" @click="toolsStore.toggleSort(sort)"
+                  :class="['px-3 py-1 rounded-md text-sm border', activeFilters.sort === sort ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-200']">
+                  {{ sort }}
+                </button>
+              </div>
+            </div>
+            <!-- 标签 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                标签筛选 (多选)
+                <button
+                  @click="clearTagFilters"
+                  v-if="activeFilters.tags.length > 0"
+                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  清除
+                </button>
+              </h4>
+              <!-- 标签搜索 -->
+              <div class="mb-3">
+                <input
+                  v-model="tagFilterSearch"
+                  type="text"
+                  placeholder="搜索标签..."
+                  class="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+              </div>
+              <!-- 分组标签 -->
+              <div class="space-y-3">
+                <div v-for="(tags, groupName) in filteredTagGroups" :key="groupName">
+                  <h5 class="text-xs font-medium text-gray-500 mb-2">{{ groupName }}</h5>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <span
+                      v-for="tag in tags"
+                      :key="tag.id"
+                      @click="toolsStore.toggleTag(tag.id)"
+                      :class="[
+                        'cursor-pointer px-2 py-1 rounded text-xs transition-all duration-200',
+                        'border flex items-center gap-1',
+                        activeFilters.tags.includes(tag.id)
+                          ? tag.color + ' border-transparent shadow-sm font-medium'
+                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                      ]"
+                    >
+                      {{ tag.name }}
+                      <i
+                        v-if="activeFilters.tags.includes(tag.id)"
+                        class="fas fa-check text-xs"
+                      ></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 用户菜单 -->
+        <div class="relative" ref="avatarRef">
+          <div v-if="isAuthenticated" @click="showUserMenu = !showUserMenu" class="cursor-pointer relative">
+            <img :src="userInfo.avatar"
+              class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover">
+            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          </div>
+          <button v-else @click="goToLogin" class="btn-primary-outline">登录</button>
+          <div v-if="showUserMenu && isAuthenticated"
+            class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in">
+            <!-- 需要修改 -->
+            <router-link to="/profile" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"><i
+                class="fas fa-user mr-2"></i>个人中心</router-link>
+            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"><i
+                class="fas fa-key mr-2"></i>修改密码</a>
+            <div class="h-px bg-gray-100 my-1"></div>
+            <p @click="handleLogout" class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"><i
+                class="fas fa-sign-out-alt mr-2"></i>退出登录</p>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div v-if="!toolsList.length" class="text-center py-20 text-gray-400">
+      <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+      <p>资源加载中...</p>
+    </div>
+    <div v-else class="space-y-12 pb-20">
+      <section v-for="category in filteredCategories" :key="category" :id="`section-${category}`" class="scroll-mt-32">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+          <h2 class="text-xl font-bold text-gray-800">{{ category }}</h2>
+          <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {{ getToolsByCategory(category).length }}
+          </span>
+        </div>
+        <!-- 修改网格容器 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-for="tool in getToolsByCategory(category)" :key="tool.id" class="tool-card-container relative"
+            @mouseenter="handleMouseEnter(tool.id)" @mouseleave="handleMouseLeave(tool.id)">
+            <!-- 卡片内容 -->
+            <div
+              class="tool-card group relative bg-white/60 hover:bg-white backdrop-blur-sm rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-white/50 cursor-pointer"
+              @click="goToDetail(tool.id)">
+              <div class="flex items-center gap-4 mb-3">
+                <img :src="tool.logo" class="w-12 h-12 rounded-xl object-cover shadow-sm bg-white" alt="logo">
+                <div class="overflow-hidden">
+                  <h3 class="font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ tool.name
+                    }}</h3>
+                  <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                    <span><i class="far fa-eye"></i> {{ tool.views }}</span>
+                    <span><i class="far fa-star"></i> {{ tool.stars }}</span>
+                  </div>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500 leading-relaxed line-clamp-2 h-10">
+                {{ tool.desc }}
+              </p>
+            </div>
+            <!-- 提示框 -->
+            <div v-if="activeToolId === tool.id" class="tooltip-absolute animate-pop-in">
+              <div class="absolute -top-1 left-8 w-2 h-2 bg-gray-800 rotate-45"></div>
+              {{ tool.fullDesc }}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</template>
+
+<!-- 修改 ToolsList.vue 的 script 部分 -->
+<script setup>
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useToolsStore } from '@/store/toolsStore'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
+
+const router = useRouter()
+const route = useRoute()
+const toolsStore = useToolsStore()
+
+// 使用storeToRefs来保持响应式
+const {
+  // 响应式变量
+  toolsList,
+  categories,
+  userInfo,
+  activeFilters,
+  searchResults,
+  // isLoading,
+  // 计算属性
+  isAuthenticated
+} = storeToRefs(toolsStore)
+
+// 一、变量声明
+// 1. 搜索
+const searchInput = ref('')
+const hasSearched = ref(false) // 是否使用搜索功能
+const isSearching = ref(false)
+// let inputTimeout = null // 用于防抖的触发器
+
+const showFilter = ref(false)
+const showUserMenu = ref(false)
+const activeToolId = ref(null)
+const tooltipTimers = ref({})
+const tagFilterSearch = ref('') // 标签过滤搜索
+
+const TOOLTIP_DELAY = 500
+
+// 二、计算属性
+// 1. 过滤后的标签
+const filteredTagGroups = computed(() => {
+  const groups = toolsStore.tagsByCategory
+  const searchTerm = tagFilterSearch.value.toLowerCase()
+  if (searchTerm) {
+    const filtered = {}
+    Object.keys(groups).forEach(groupName => {
+      const filteredTags = groups[groupName].filter(tag =>
+        tag.name.toLowerCase().includes(searchTerm) ||
+        tag.id.toLowerCase().includes(searchTerm)
+      )
+      if (filteredTags.length > 0) {
+        filtered[groupName] = filteredTags
+      }
+    })
+    return filtered
+  }
+  return groups
+})
+// 2. 过滤后的类别
+const filteredCategories = computed(() => {
+  // 如果有搜索结果，只显示包含搜索结果的分类
+  if (hasSearched.value && searchResults.value.length > 0) {
+    const cats = [...new Set(searchResults.value.map(t => t.category))]
+    return categories.value?.filter(cat => cats.includes(cat))
+  }
+  return categories.value
+})
+
+// 三、方法
+// 1. 鼠标进入
+const handleMouseEnter = (toolId) => {
+  if (tooltipTimers.value[toolId]) {
+    clearTimeout(tooltipTimers.value[toolId])
+  }
+  tooltipTimers.value[toolId] = setTimeout(() => {
+    activeToolId.value = toolId
+  }, TOOLTIP_DELAY)
+}
+// 2. 鼠标离开
+const handleMouseLeave = (toolId) => {
+  if (tooltipTimers.value[toolId]) {
+    clearTimeout(tooltipTimers.value[toolId])
+    tooltipTimers.value[toolId] = null
+  }
+  activeToolId.value = null
+}
+// 3. 搜索功能
+const handleSearch = async () => {
+  isSearching.value = true
+  const query = searchInput.value.trim()
+  if (query) {
+    try {
+      await toolsStore.searchTools(query)
+      hasSearched.value = true
+    } catch (error) {
+      ElMessage.error('搜索失败')
+    } finally {
+      isSearching.value = false
+    }
+  }
+}
+// 4.处理输入变化，具有防抖功能（防抖功能用于日后扩展）
+const handleInputChange = () => {
+  hasSearched.value = false
+  // 如果希望输入完成后才执行某些操作，可以添加防抖
+  // clearTimeout(inputTimeout)
+  // inputTimeout = setTimeout(() => {
+  //   // 这里可以执行一些操作，比如自动搜索
+  //   // autoSearch()
+  // }, 300)
+}
+// 5. 清空搜索框
+const clearSearch = () => {
+  searchInput.value = ''
+  hasSearched.value = false
+  searchResults.value = []
+}
+// 6. 清空已选标签
+const clearTagFilters = () => {
+  activeFilters.value.tags = []
+}
+// 7. 根据类别获取工具
+const getToolsByCategory = (cat) => {
+  let list = []
+  if (hasSearched.value) { // 是否进行搜索
+    if (searchResults.value.length > 0) { // 有搜索结果
+      list = searchResults.value?.filter(t => t.category === cat)
+      return filterToolList(list)
+    } else { // 无搜索结果，返回空list
+      return list
+    }
+  }
+  list = toolsList.value?.filter(t => t.category === cat)
+  return filterToolList(list) // 最后还需要对工具列表使用筛选功能
+}
+// 8. 筛选逻辑，分别作用于各个category下
+const filterToolList = (list) => {
+  // 排序
+  if (activeFilters.value.sort === '最多浏览') {
+    list.sort((a, b) => b.views - a.views)
+  } else if (activeFilters.value.sort === '最多收藏') {
+    list.sort((a, b) => b.stars - a.stars)
+  }
+  // 标签
+  if (activeFilters.value.tags.length > 0) {
+    list = list?.filter(item => activeFilters.value.tags.every(tag => item.tags.includes(tag)))
+  }
+  return list
+}
+// 9. 访问详情页
+const goToDetail = async (id) => {
+  if (tooltipTimers.value[id]) {
+    clearTimeout(tooltipTimers.value[id])
+    tooltipTimers.value[id] = null
+  }
+  activeToolId.value = null
+  toolsStore.addToolView(id) // 浏览量加1
+  router.push({ name: 'ToolDetail', params: { id } })
+}
+// ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
+// 10. 进入登录页面
+const goToLogin = () => {
+  router.push({ name: 'Login' })
+}
+// 11. 退出登录
+const handleLogout = async () => {
+  try {
+    await toolsStore.logout()
+    showUserMenu.value = false
+    ElMessage.success('已退出登录')
+  } catch (error) {
+    ElMessage.error('退出登录失败')
+  }
+}
+// 12. 辅助：关闭下拉菜单
+const filterRef = ref(null)
+const avatarRef = ref(null)
+const closeDropdowns = (e) => {
+  if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
+  if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
+}
+
+// 四、监听器
+// 1. 监听路由参数
+watch(() => route.query, (newQuery) => {
+  if (newQuery.tagId) {
+    const tagId = newQuery.tagId
+    // 清空原始已勾选的标签（“通用”除外），并根据tagId标签进行筛选
+    if (!activeFilters.value.tags.includes(tagId)) {
+      toolsStore.clearTags() // 先清空原始标签
+      toolsStore.toggleTag(tagId)
+    }
+
+    // 如果有tagName，可以显示友好的筛选提示
+    if (newQuery.tagName) {
+      ElMessage.success(`已筛选标签: ${newQuery.tagName}`)
+    }
+  }
+}, { immediate: true })
+
+// 五、生命周期函数
+onMounted(() => {
+  document.addEventListener('click', closeDropdowns)
+})
+
+onUnmounted(() => {
+  Object.values(tooltipTimers.value).forEach(timerId => {
+    if (timerId) clearTimeout(timerId)
+  })
+})
+</script>
+
+<style scoped>
+@import '../../index.css';
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary-outline {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid #0066ff;
+  color: #0066ff;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-primary-outline:hover {
+  background: #0066ff;
+  color: white;
+}
+
+.animate-pop-in {
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* 现代浏览器支持 */
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-box;
+  display: box;
+  line-clamp: 2;
+}
+
+/* 卡片容器样式 */
+.tool-card-container {
+  position: relative;
+  z-index: 1;
+}
+
+.tool-card-container:hover {
+  z-index: 50;
+}
+
+/* 提示框样式 */
+.tooltip-absolute {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0 10px;
+  padding: 16px;
+  background: #1f2937;
+  color: white;
+  font-size: 12px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  pointer-events: none;
+  backdrop-filter: none;
+}
+
+/* 如果需要更平滑的动画 */
+.tooltip-absolute {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.tool-card-container:hover .tooltip-absolute {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.5s;
+  /* 与JS延迟保持一致 */
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-wave {
+  animation: wave 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+</style>

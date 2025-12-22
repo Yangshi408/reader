@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen relative overflow-hidden">
+  <div class="min-h-screen relative">
     <div class = "main-wrapper">
       <div class="relative z-10 container mx-auto pt-8 pb-20">
         <!-- 左侧可折叠侧边栏 -->
@@ -122,7 +122,7 @@
           <div class="section-container">
             <div class="section-header">
               <h2 class="section-title-text">精选工具</h2>
-              <a href="#" class="more-btn-small">更多 →</a>
+              <router-link to="/tools" class="more-btn-small">更多 →</router-link>
             </div>
             <section id="tools" class="section-card">
               <div class="grid grid-cols-5 gap-4">
@@ -859,7 +859,7 @@ main {
 @media (max-width:1024px) {
   .container { flex-direction:column; }
   .grid { grid-template-columns:repeat(3,1fr); }
-  .sidebar { width:100px; margin-bottom:1rem; }
+  .sidebar { width:100px; margin-bottom:1rem; z-index: 10;}
   .avatar-container {
     right: 10px;
   }

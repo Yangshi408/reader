@@ -30,6 +30,28 @@ const constantRoutes = [
     path: '/profile',
     name: 'profile',
     component: () => import('@/pages/profile.vue')
+  },
+  // 工具页面导航
+  {
+    path: '/tools',
+    component: () => import('@/pages/tool/ToolsLayout.vue'), // 工具模块主布局
+    children: [
+      {
+        path: '',
+        name: 'ToolsList',
+        component: () => import('@/pages/tool/ToolsList.vue') // 工具列表主页
+      },
+      {
+        path: 'detail/:id',
+        name: 'ToolDetail',
+        component: () => import('@/pages/tool/ToolDetail.vue') // 工具详情页
+      },
+      {
+        path: 'submit',
+        name: 'ToolSubmit',
+        component: () => import('@/pages/tool/ToolSubmit.vue') // 工具提交页
+      }
+    ]
   }
 
 ]
