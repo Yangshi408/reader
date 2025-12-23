@@ -52,19 +52,49 @@ const constantRoutes = [
         component: () => import('@/pages/tool/ToolSubmit.vue') // 工具提交页
       }
     ]
+  },
+  // 课程模块路由
+  {
+    path: '/courses',
+    component: () => import('@/pages/course/CourseLayout.vue'),
+    redirect: '/courses/list', // 默认跳转到列表页
+    children: [
+      {
+        path: '', // 默认子路由
+        name: 'CourseList',
+        component: () => import('@/pages/course/CourseList.vue')
+      },
+      {
+        path: 'list',
+        name: 'CourseList',
+        component: () => import('@/pages/course/CourseList.vue'),
+        meta: { title: '课程列表' }
+      },
+      {
+        path: 'detail/:id',
+        name: 'CourseDetail',
+        component: () => import('@/pages/course/CourseDetail.vue'),
+        meta: { title: '课程详情' }
+      }
+    ]
   }
-
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior (to, from, savedPosition) {
-    // 返回滚动位置
+    // 1. 如果是浏览器的前进/后退操作，使用保存的滚动位置
     if (savedPosition) {
       return savedPosition
-    } else {
-      return { top: 0, left: 0 }
     }
+    // 2. 关键修改：如果路由名称相同（说明只是 query 或 params 变了，例如点击侧边栏切换学期）
+    // 返回空对象 {} 表示"不改变滚动位置"
+    // 这样 CourseList.vue 里的 scrollIntoView 才能平滑滚动，而不会先闪回顶部
+    if (to.name === from.name) {
+      return {}
+    }
+    // 3. 如果是跳转到完全不同的新页面，则滚动到顶部
+    return { top: 0, left: 0 }
   },
   routes: constantRoutes
 })

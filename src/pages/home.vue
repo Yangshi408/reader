@@ -148,7 +148,7 @@
           <div class="section-container">
             <div class="section-header">
               <h2 class="section-title-text">课程浏览</h2>
-              <a href="#" class="more-btn-small">更多 →</a>
+              <router-link to="/courses" class="more-btn-small">更多 →</router-link>
             </div>
             <section id="courses" class="section-card">
               <div class="grid grid-cols-5 gap-4">

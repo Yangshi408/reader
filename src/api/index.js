@@ -56,24 +56,35 @@ const HttpManager = {
   toggleCommentLike: (toolId, commentId) => post(`tools/${toolId}/comments/${commentId}/like`), // 点赞/取消点赞评论
 
   // =======================> 课程 API
-  getCourses: (params) => get('courses/profile', params),
-  searchCourses: (params) => get('courses/search', params),
-  getCourseDetail: (courseId, resourceType) => get(`courses/${courseId}`, { resourceType }),
-  uploadCourseResource: (courseId, resourceType, params) =>
-    post(`courses/${courseId}/upload`, { resourceType, ...params }),
-  downloadTextbook: (courseId, textbookId) =>
-    get(`courses/${courseId}/textbooks/${textbookId}/download`),
-  addCourseComment: (courseId, params) => post(`courses/${courseId}/comments`, params),
-  deleteCourseComment: (courseId) => deletes(`courses/${courseId}/comments`),
-  addCourseCommentReply: (courseId, commentId, params) =>
-    post(`courses/${courseId}/comments/${commentId}/reply`, params),
-  deleteCourseCommentReply: (courseId, commentId) =>
-    deletes(`courses/${courseId}/comments/${commentId}/reply`),
-  addCourseView: (courseId) => post(`courses/${courseId}/view`),
-  toggleCourseCollection: (courseId) => post(`courses/${courseId}/collected`),
-  removeCourseCollection: (courseId) => deletes(`courses/${courseId}/collected`),
+  // getCourses: (params) => get('courses/profile', params),
+  // searchCourses: (params) => get('courses/search', params),
+  // getCourseDetail: (courseId, resourceType) => get(`courses/${courseId}`, { resourceType }),
+  // uploadCourseResource: (courseId, resourceType, params) =>
+  //   post(`courses/${courseId}/upload`, { resourceType, ...params }),
+  // downloadTextbook: (courseId, textbookId) =>
+  //   get(`courses/${courseId}/textbooks/${textbookId}/download`),
+  // addCourseComment: (courseId, params) => post(`courses/${courseId}/comments`, params),
+  // deleteCourseComment: (courseId) => deletes(`courses/${courseId}/comments`),
+  // addCourseCommentReply: (courseId, commentId, params) =>
+  //   post(`courses/${courseId}/comments/${commentId}/reply`, params),
+  // deleteCourseCommentReply: (courseId, commentId) =>
+  //   deletes(`courses/${courseId}/comments/${commentId}/reply`),
+  // addCourseView: (courseId) => post(`courses/${courseId}/view`),
+  // toggleCourseCollection: (courseId) => post(`courses/${courseId}/collected`),
+  // removeCourseCollection: (courseId) => deletes(`courses/${courseId}/collected`),
+  // toggleCourseLike: (courseId) => post(`courses/${courseId}/like`),
+  // removeCourseLike: (courseId) => deletes(`courses/${courseId}/like`),
+
+  // =======================> 课程 API (新)
+  /**
+   * 获取课程列表
+   * @param {Object} params - { semester: '大一上', type: '公必', keyword: '搜索词' }
+   */
+  getCourses: (params) => get('courses', params),
+  // 获取课程详情
+  getCourseDetail: (courseId) => get(`courses/${courseId}`),
+  // 课程点赞/取消点赞 (如果需要)
   toggleCourseLike: (courseId) => post(`courses/${courseId}/like`),
-  removeCourseLike: (courseId) => deletes(`courses/${courseId}/like`),
 
   // =======================> 项目 API
   getProjects: (params) => get('projects/profile', params),
