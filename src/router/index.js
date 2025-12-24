@@ -75,6 +75,12 @@ const constantRoutes = [
         name: 'CourseDetail',
         component: () => import('@/pages/course/CourseDetail.vue'),
         meta: { title: '课程详情' }
+      },
+      {
+        path: '/course/submit',
+        name: 'CourseSubmit',
+        component: () => import('@/pages/course/CourseSubmit.vue'),
+        meta: { title: '资料上传' }
       }
     ]
   }
