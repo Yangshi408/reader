@@ -1,35 +1,47 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, RouterView } from 'vue-router'
 
 const constantRoutes = [
-  {
-    path: '/',
-    name: 'Login',
-    component: () => import('@/pages/login.vue')
-  },
-  {
-    path: '/register',
-    name: 'register',
-    component: () => import('@/pages/register.vue')
-  },
-  {
-    path: '/forgot-password',
-    name: 'forget',
-    component: () => import('@/pages/forget_pass.vue')
-  },
   {
     path: '/home',
     name: 'home',
     component: () => import('@/pages/home.vue')
   },
   {
-    path: '/logout',
-    name: 'logout',
-    component: () => import('@/pages/logout.vue')
+    path: '/profile',
+    component: RouterView,
+    children: [
+      {
+        path: '',
+        name: 'profile',
+        component: () => import('@/pages/per/profile.vue')
+      }
+    ]
   },
   {
-    path: '/profile',
-    name: 'profile',
-    component: () => import('@/pages/profile.vue')
+    path: '/',
+    component: RouterView,
+    children: [
+      {
+        path: '',
+        name: 'Login',
+        component: () => import('@/pages/log/login.vue')
+      },
+      {
+        path: 'register',
+        name: 'register',
+        component: () => import('@/pages/log/register.vue')
+      },
+      {
+        path: 'forgot-password',
+        name: 'forget',
+        component: () => import('@/pages/log/forget_pass.vue')
+      },
+      {
+        path: 'logout',
+        name: 'logout',
+        component: () => import('@/pages/log/logout.vue')
+      }
+    ]
   },
   // 工具页面导航
   {

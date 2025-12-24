@@ -1,6 +1,8 @@
 <template>
   <div class="login-in">
-    <login-logo/>
+    <div class="logo-container">
+      <img :src="logo" alt="logo" class="logo" />
+    </div>
     <div class="login">
       <div class="login-head">
         <span>帐号登录</span>
@@ -28,7 +30,7 @@
         </el-form-item>
         <div class="login-btn">
           <el-button @click="goSignUp">注册</el-button>
-          <el-button type="primary" @click="handleleLoginIn" :loading="loading">
+          <el-button type="primary" @click="handleLoginIn" :loading="loading">
             {{ loading ? '登录中...' : '登录' }}
           </el-button>
         </div>
@@ -45,15 +47,16 @@
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
+import logoImg from '../../assets/logo.png'
 import { ElMessage, ElNotification } from 'element-plus'
 import { View, Hide } from '@element-plus/icons-vue'
-import LoginLogo from '../components/LoginLogo.vue'
-import { HttpManager } from '../api/index'
+import { HttpManager } from '@/api'
 
 // 使用 Vue 3 的 Composition API
 const router = useRouter()
 const store = useStore()
 const loginFormRef = ref()
+const logo = logoImg
 
 // 响应式数据
 const loginForm = reactive({
@@ -143,8 +146,7 @@ const handleLoginIn = () => {
             setTimeout(() => {
               changeIndex('首页')
               router.push({ path: '/' })
-              // Vue 3 中 router.go(0) 会导致整个应用重新加载，建议使用其他方式刷新数据
-              window.location.reload() // 如果需要强制刷新页面
+              location.reload() // 如果需要强制刷新页面
             }, 2000)
           } else {
             notify('用户名或密码错误', 'error')
@@ -183,5 +185,5 @@ const goForgotPassword = () => {
 </script>
 
 <style lang="scss" scoped>
-@import '../assets/css/login-in.scss';
+@import '../../assets/css/login-in';
 </style>

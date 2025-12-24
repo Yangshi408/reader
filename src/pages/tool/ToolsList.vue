@@ -7,32 +7,64 @@
           <i class="fas fa-home"></i> 主页
         </router-link>
       </div>
-      <!-- 头部搜索框 -->
-      <div class="relative w-full max-w-xl group">
-        <input v-model="searchInput" @keyup.enter="handleSearch" @input="handleInputChange" type="text"
-              placeholder="搜索想要的神器..."
-              class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md">
-        <!-- 搜索图标 -->
-        <div v-if="!isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
-          <i @click="handleSearch"
-            class="fas fa-search text-gray-400 cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+
+      <!-- 中间：搜索栏 (完全重写) -->
+      <!-- 使用 max-w-2xl 稍微宽一点以容纳下拉框 -->
+      <div class="relative w-full max-w-2xl group">
+        <div class="search-bar-container">
+
+          <!-- 1. 自定义搜索引擎选择器 -->
+          <div class="engine-wrapper" ref="engineRef">
+            <!-- 触发器 -->
+            <div class="engine-trigger" @click.stop="engineMenuOpen = !engineMenuOpen">
+              <span>{{ currentEngineName }}</span>
+              <i :class="['fas fa-chevron-down arrow-icon', { 'rotate': engineMenuOpen }]"></i>
+            </div>
+
+            <!-- 下拉菜单 -->
+            <div v-if="engineMenuOpen" class="engine-dropdown">
+              <div
+                v-for="e in engines"
+                :key="e.value"
+                class="engine-option"
+                :class="{ 'selected': searchEngine === e.value }"
+                @click.stop="selectEngine(e.value)"
+              >
+                {{ e.name }}
+                <i v-if="searchEngine === e.value" class="fas fa-check check-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 输入框 -->
+          <input
+            v-model="searchInput"
+            @keydown.enter="handleSearch"
+            @input="handleInputChange"
+            type="text"
+            placeholder="搜索想要的神器..."
+            class="search-input-field"
+          >
+
+          <!-- 3. 右侧图标区域 (搜索/加载) -->
+          <div class="search-action">
+            <i v-if="!isSearching" @click="handleSearch" class="fas fa-search hover:text-blue-500 cursor-pointer transition-colors"></i>
+            <i v-else class="fas fa-spinner fa-spin text-blue-500"></i>
+          </div>
         </div>
-        <!-- 搜索时的加载图标（替换搜索图标） -->
-        <div v-if="isSearching" class="absolute right-4 top-1/2 -translate-y-1/2">
-          <i class="fas fa-spinner fa-spin text-blue-500"></i>
-        </div>
-        <!-- 搜索成功后的提示框 -->
-        <div v-if="hasSearched && !isSearching"
-            class="absolute top-14 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down z-10">
+
+        <!-- 搜索成功后的提示框 (仅当使用本站搜索时显示) -->
+        <div v-if="hasSearched && !isSearching && searchEngine === 'local'"
+             class="absolute top-16 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down z-10">
           <i class="fas fa-info-circle mr-2"></i>
           "{{ searchInput }}" 的搜索结果如下：
           <span class="ml-2 text-xs text-blue-400 cursor-pointer hover:underline" @click="clearSearch">清除搜索</span>
         </div>
-        <!-- 搜索时的加载动画（悬浮效果） -->
-        <div v-if="isSearching"
-            class="absolute top-14 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 animate-fade-in">
+
+        <!-- 搜索时的加载动画 (仅本站搜索时) -->
+        <div v-if="isSearching && searchEngine === 'local'"
+             class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 animate-fade-in">
           <div class="flex flex-col items-center justify-center">
-            <!-- 波浪动画 -->
             <div class="flex items-center justify-center space-x-1 mb-3">
               <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0s"></div>
               <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.1s"></div>
@@ -40,12 +72,7 @@
               <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.3s"></div>
               <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.4s"></div>
             </div>
-
-            <!-- 文字提示 -->
-            <p class="text-sm text-gray-600 font-medium">
-              正在搜索 "{{ searchInput }}"...
-            </p>
-            <p class="text-xs text-gray-400 mt-1">请稍等片刻</p>
+            <p class="text-sm text-gray-600 font-medium">正在搜索 "{{ searchInput }}"...</p>
           </div>
         </div>
       </div>
@@ -118,24 +145,74 @@
             </div>
           </div>
         </div>
+        <!-- 用户菜单 (重写) -->
         <!-- 用户菜单 -->
         <div class="relative" ref="avatarRef">
-          <div v-if="isAuthenticated" @click="showUserMenu = !showUserMenu" class="cursor-pointer relative">
-            <img :src="userInfo.avatar"
-              class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover">
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+
+          <!-- 头像按钮 -->
+          <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
+
+            <!-- 情况 1: 已登录 且 有头像图片 -->
+            <template v-if="isAuthenticated && userInfo?.avatar">
+              <img
+                :src="userInfo.avatar"
+                class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
+                alt="User Avatar"
+              >
+              <!-- 在线状态绿点 -->
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
+
+            <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
+            <template v-else-if="isAuthenticated">
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
+                {{ userInitial }}
+              </div>
+              <!-- 在线状态绿点 -->
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
+
+            <!-- 情况 3: 游客 (显示 "游") -->
+            <template v-else>
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
+                {{ userInitial }}
+              </div>
+            </template>
+
           </div>
-          <button v-else @click="goToLogin" class="btn-primary-outline">登录</button>
-          <div v-if="showUserMenu && isAuthenticated"
-            class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in">
-            <!-- 需要修改 -->
-            <router-link to="/profile" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"><i
-                class="fas fa-user mr-2"></i>个人中心</router-link>
-            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"><i
-                class="fas fa-key mr-2"></i>修改密码</a>
-            <div class="h-px bg-gray-100 my-1"></div>
-            <p @click="handleLogout" class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"><i
-                class="fas fa-sign-out-alt mr-2"></i>退出登录</p>
+
+          <!-- 下拉菜单 -->
+          <div v-if="showUserMenu"
+               class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
+
+            <!-- 已登录菜单内容 -->
+            <template v-if="isAuthenticated">
+              <div class="px-4 py-3 border-b border-gray-50">
+                <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
+                <p class="text-xs text-gray-400 truncate">已登录</p>
+              </div>
+              <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+              </router-link>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <p @click="handleLogout" class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+              </p>
+            </template>
+
+            <!-- 游客菜单内容 -->
+            <template v-else>
+              <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
+                当前身份：游客
+              </div>
+              <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+              </router-link>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <div @click="goToLogin" class="block px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium cursor-pointer transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>返回登录
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -213,6 +290,36 @@ const {
   isAuthenticated
 } = storeToRefs(toolsStore)
 
+// ==================== 1. 搜索引擎配置 ====================
+const engines = [
+  { name: '本站', value: 'local' },
+  { name: '百度', value: 'https://www.baidu.com/s?wd=' },
+  { name: '谷歌', value: 'https://www.google.com/search?q=' },
+  { name: '必应', value: 'https://cn.bing.com/search?q=' }
+]
+const searchEngine = ref('local') // 默认本地搜索
+const engineMenuOpen = ref(false) // 引擎菜单开关
+
+// 计算当前选中的引擎名字
+const currentEngineName = computed(() => {
+  const engine = engines.find(e => e.value === searchEngine.value)
+  return engine ? engine.name : '本站'
+})
+
+const userInitial = computed(() => {
+  // 1. 游客显示 '游'
+  if (!isAuthenticated.value) return '游'
+
+  // 2. 已登录（但没图片的情况）显示 '我'
+  return '我'
+})
+
+// 选择引擎
+const selectEngine = (value) => {
+  searchEngine.value = value
+  engineMenuOpen.value = false
+}
+
 // 一、变量声明
 // 1. 搜索
 const searchInput = ref('')
@@ -223,6 +330,7 @@ const isSearching = ref(false)
 const showFilter = ref(false)
 const showUserMenu = ref(false)
 const activeToolId = ref(null)
+const engineRef = ref(null)
 const tooltipTimers = ref({})
 const tagFilterSearch = ref('') // 标签过滤搜索
 
@@ -276,32 +384,36 @@ const handleMouseLeave = (toolId) => {
   }
   activeToolId.value = null
 }
-// 3. 搜索功能
+// 4.处理输入变化，具有防抖功能（防抖功能用于日后扩展）
 const handleSearch = async () => {
-  isSearching.value = true
   const query = searchInput.value.trim()
-  if (query) {
-    try {
-      await toolsStore.searchTools(query)
-      hasSearched.value = true
-    } catch (error) {
-      ElMessage.error('搜索失败')
-    } finally {
-      isSearching.value = false
-    }
+  if (!query) return
+
+  // A. 外部引擎搜索：直接跳转
+  if (searchEngine.value !== 'local') {
+    window.open(searchEngine.value + encodeURIComponent(query), '_blank')
+    searchInput.value = '' // 可选：清空输入框
+    return
+  }
+
+  // B. 本站搜索：执行原有逻辑
+  isSearching.value = true
+  try {
+    await toolsStore.searchTools(query)
+    hasSearched.value = true
+  } catch (error) {
+    ElMessage.error('搜索失败')
+  } finally {
+    isSearching.value = false
   }
 }
-// 4.处理输入变化，具有防抖功能（防抖功能用于日后扩展）
+
 const handleInputChange = () => {
-  hasSearched.value = false
-  // 如果希望输入完成后才执行某些操作，可以添加防抖
-  // clearTimeout(inputTimeout)
-  // inputTimeout = setTimeout(() => {
-  //   // 这里可以执行一些操作，比如自动搜索
-  //   // autoSearch()
-  // }, 300)
+  if (searchEngine.value === 'local') {
+    hasSearched.value = false
+  }
 }
-// 5. 清空搜索框
+
 const clearSearch = () => {
   searchInput.value = ''
   hasSearched.value = false
@@ -364,13 +476,15 @@ const handleLogout = async () => {
     ElMessage.error('退出登录失败')
   }
 }
-// 12. 辅助：关闭下拉菜单
-const filterRef = ref(null)
-const avatarRef = ref(null)
 const closeDropdowns = (e) => {
   if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
   if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
+  // 新增：关闭引擎菜单
+  if (engineRef.value && !engineRef.value.contains(e.target)) engineMenuOpen.value = false
 }
+// 12. 辅助：关闭下拉菜单
+const filterRef = ref(null)
+const avatarRef = ref(null)
 
 // 四、监听器
 // 1. 监听路由参数
@@ -412,18 +526,132 @@ onUnmounted(() => {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
-.btn-primary-outline {
-  padding: 0.5rem 1.5rem;
-  border: 1px solid #0066ff;
-  color: #0066ff;
-  border-radius: 999px;
-  font-weight: 600;
-  transition: all 0.3s;
+/* ================== 新增：搜索栏样式 ================== */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  background: white;
+  border-radius: 99px; /* 圆角 */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  padding-right: 16px; /* 右侧图标间距 */
 }
 
-.btn-primary-outline:hover {
-  background: #0066ff;
-  color: white;
+/* 悬停/聚焦效果 */
+.group:hover .search-bar-container,
+.search-bar-container:focus-within {
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+/* 引擎选择容器 */
+.engine-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #f3f4f6;
+  padding: 0 16px;
+  margin-right: 8px;
+}
+
+/* 引擎触发器 */
+.engine-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563; /* gray-600 */
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.engine-trigger:hover {
+  color: #3b82f6;
+}
+
+.arrow-icon {
+  font-size: 10px;
+  color: #9ca3af;
+  transition: transform 0.3s;
+}
+.arrow-icon.rotate {
+  transform: rotate(180deg);
+  color: #3b82f6;
+}
+
+/* 引擎下拉菜单 */
+.engine-dropdown {
+  position: absolute;
+  top: 120%;
+  left: 0;
+  width: 120px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 6px;
+  z-index: 100;
+  border: 1px solid #f3f4f6;
+  animation: popIn 0.2s ease-out;
+}
+
+.engine-option {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #4b5563;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  transition: all 0.2s;
+}
+
+.engine-option:hover {
+  background: #eff6ff; /* blue-50 */
+  color: #3b82f6;
+}
+
+.engine-option.selected {
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.check-icon {
+  font-size: 10px;
+}
+
+/* 输入框 */
+.search-input-field {
+  flex: 1;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #1f2937;
+  width: 100%; /* 确保填满剩余空间 */
+}
+
+.search-input-field::placeholder {
+  color: #9ca3af;
+}
+
+/* 右侧图标 */
+.search-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 16px;
 }
 
 .animate-pop-in {
@@ -435,11 +663,6 @@ onUnmounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /* 现代浏览器支持 */
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-box;
-  display: box;
   line-clamp: 2;
 }
 

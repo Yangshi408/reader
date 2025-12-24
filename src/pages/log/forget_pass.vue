@@ -1,6 +1,8 @@
 <template>
   <div class="forgot-password-in">
-    <login-logo />
+    <div class="logo-container">
+      <img :src="logo" alt="logo" class="logo" />
+    </div>
     <div class="forgot-password">
       <div class="forgot-password-head">
         <span>重置密码</span>
@@ -86,14 +88,14 @@ import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
-import LoginLogo from '../components/LoginLogo.vue'
+import logoImg from '../../assets/logo.png'
 import { View, Hide } from '@element-plus/icons-vue'
-import { HttpManager } from '../api/index'
 
 const router = useRouter()
 const store = useStore()
 const formRef = ref()
 const loading = ref(false)
+const logo = logoImg
 
 const passwordType1 = ref('password')
 const passwordType2 = ref('password')
@@ -160,21 +162,20 @@ const submitForm = () => {
     if (!valid) return
 
     loading.value = true
-    const params = new FormData()
-    params.append('email', form.email)
-    params.append('new_password', form.new_password)
-    params.append('certify_password', form.certify_password)
-
     try {
-      const res = await HttpManager.forgotPassword(params)
+      const result = await store.dispatch('forgotPassword', {
+        email: form.email,
+        new_password: form.new_password,
+        certify_password: form.certify_password
+      })
 
-      if (res.message?.includes('成功') || res.code === 1) {
+      if (result.message?.includes('成功') || result.code === 1) {
         ElMessage.success('密码重置成功！请重新登录')
         setTimeout(() => {
-          router.push('/')
+          router.push('/login')
         }, 1500)
       } else {
-        ElMessage.error(res.message || '重置失败，请检查信息')
+        ElMessage.error(result.message || '重置失败，请检查信息')
       }
     } catch (err) {
       ElMessage.error('网络错误，请稍后重试')
@@ -214,6 +215,18 @@ onBeforeUnmount(() => {
   justify-content: center;
   background: linear-gradient(135deg, #a29bf0 0%, #e9b7d4 100%);
   padding: 20px;
+
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: -30px; /* 根据需要调整 logo 和登录框的间距 */
+
+    .logo {
+      width: 300px; /* 根据实际图片大小调整宽度 */
+      height: auto;
+      object-fit: contain;
+    }
+  }
 
   .forgot-password {
     width: 100%;
