@@ -45,7 +45,7 @@ axios.interceptors.response.use(
           router.replace({
             path: '/login',
             query: {
-              redirect: router.currentRoute.fullPath
+              redirect: router.currentRoute
             }
           })
           break

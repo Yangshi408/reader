@@ -1,6 +1,8 @@
 <template>
   <div class="register-in">
-    <login-logo />
+    <div class="logo-container">
+      <img :src="logo" alt="logo" class="logo" />
+    </div>
     <div class="register">
       <div class="register-head">
         <span>帐号注册</span>
@@ -99,12 +101,13 @@ import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElNotification } from 'element-plus'
 import { View, Hide } from '@element-plus/icons-vue'
-import LoginLogo from '../components/LoginLogo.vue'
-import { HttpManager } from '../api/index'
+import logoImg from '../../assets/logo.png'
+import { HttpManager } from '@/api'
 
 const router = useRouter()
 const store = useStore()
 const registerFormRef = ref()
+const logo = logoImg
 
 const registerForm = reactive({
   username: '', email: '', password: '', confirmPassword: '', nickname: '', certify_password: ''
@@ -237,6 +240,18 @@ const goLogin = () => router.push('/')
   overflow: hidden;
   background: linear-gradient(135deg, #a29bf0 0%, #e9b7d4 100%);
   padding: 20px;
+
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: -30px; /* 根据需要调整 logo 和登录框的间距 */
+
+    .logo {
+      width: 300px; /* 根据实际图片大小调整宽度 */
+      height: auto;
+      object-fit: contain;
+    }
+  }
 
   .register {
     width: 100%;

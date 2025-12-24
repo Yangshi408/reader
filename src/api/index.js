@@ -1,5 +1,90 @@
 import { get, post, put, deletes } from './request'
 
+export const userAPI = {
+  // 获取用户资料
+  getProfile: (token) => {
+    return get('/users/profile', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 更新用户资料
+  updateProfile: (data, token) => {
+    // 如果data是FormData，直接传递，否则转换为FormData
+    let formData = data
+    if (!(data instanceof FormData)) {
+      formData = new FormData()
+      for (const key in data) {
+        if (data[key] !== null && data[key] !== undefined) {
+          formData.append(key, data[key])
+        }
+      }
+    }
+    return post('/users/update', formData)
+  },
+
+  // 获取审核状态
+  getReviewStatus: (token) => {
+    return get('/users/status', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 获取个人收藏
+  getCollection: (token) => {
+    return get('/users/collection', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 取消收藏
+  deleteCollection: (resourceType, resourceId, token) => {
+    return deletes(`/users/collection/${resourceType}/${resourceId}/`, {})
+  },
+
+  // 获取个人提交
+  getSubmissions: (token) => {
+    return get('/users/summit', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 更新提交状态
+  updateSubmissionStatus: (resourceType, resourceId, data, token) => {
+    return put(`/users/status/${resourceType}/${resourceId}/statu`, data)
+  },
+
+  // 更新邮箱
+  updateEmail: (data, token) => {
+    // 将数据转换为FormData
+    const formData = new FormData()
+    for (const key in data) {
+      if (data[key] !== null && data[key] !== undefined) {
+        formData.append(key, data[key])
+      }
+    }
+    return post('/users/profile/new_email', formData)
+  },
+
+  updatePassword: (data, token) => {
+    const formData = new FormData()
+    for (const key in data) {
+      if (data[key] !== null && data[key] !== undefined) {
+        formData.append(key, data[key])
+      }
+    }
+    return post('/users/profile/new_password', formData)
+  }
+}
+
 const HttpManager = {
   // =======================> 认证 API
   // 登录
@@ -8,31 +93,23 @@ const HttpManager = {
   SignUp: (params) => post('auth/register', params),
   // 忘记密码
   forgotPassword: (params) => post('auth/forgot-password', params),
-  // 更新邮箱
-  updateEmail: (params) => post('auth/new_email', params),
-  // 更新密码
-  updatePassword: (params) => post('auth/new-password', params),
   // 登出
   logout: () => post('users/logout'),
-
   // =======================> 用户 API
   // 获取用户资料
-  getUserProfile: () => get('users/profile'),
+  getUserProfile: (token) => userAPI.getProfile(token),
   // 更新用户资料
-  updateUserProfile: (params) => put('users/profile', params),
+  updateUserProfile: (data, token) => userAPI.updateProfile(data, token),
   // 获取审核状态
-  getUserStatus: () => get('users/status'),
+  getReviewStatus: (token) => userAPI.getReviewStatus(token),
   // 获取个人收藏
-  getUserCollection: () => get('users/collection'),
-  // 取消收藏
-  removeCollection: (resourceType, resourceId) =>
-    deletes(`users/collection/${resourceType}/${resourceId}/`),
+  getUserCollection: (token) => userAPI.getCollection(token),
   // 获取个人提交
-  getUserSubmissions: () => get('users/summit'),
-  // 管理个人发帖状态
-  updateResourceStatus: (resourceType, resourceId, params) =>
-    put(`users/status/${resourceType}/${resourceId}/statu`, params),
-
+  getUserSubmissions: (token) => userAPI.getSubmissions(token),
+  // 更新密码
+  updatePassword: (data, token) => userAPI.updatePassword(data, token),
+  // 更新邮箱
+  updateEmail: (data, token) => userAPI.updateEmail(data, token),
   // =======================> 工具 API
   getTools: (params) => get('tools/profile', params),
   searchTools: (params) => get('tools/search', params),
