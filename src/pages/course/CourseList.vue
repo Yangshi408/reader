@@ -541,7 +541,7 @@ const closeDropdowns = (e) => {
   }
 }
 
-// 核心修复逻辑：滚动控制
+// 滚动控制逻辑
 const scrollToSemester = (queryValue) => {
   if (!queryValue) return
 
@@ -581,7 +581,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 复用 ToolsList 的样式 */
+/* 复用部分 ToolsList 的样式 */
 @import '../../index.css';
 
 .glass-header {

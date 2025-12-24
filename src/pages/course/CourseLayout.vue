@@ -16,6 +16,14 @@
       </div>
 
       <nav class="flex-1 overflow-y-auto overflow-x-hidden py-6 px-2 space-y-2">
+        <router-link to="/tools"
+          :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
+                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
+                   route.name === 'tools' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+          <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">效率工具</span>
+        </router-link>
+
         <div class="nav-group">
           <div :class="['flex items-center rounded-xl bg-blue-50 text-blue-600 font-bold cursor-default group', isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3']">
             <i class="fas fa-layer-group group-hover:rotate-12 transition-transform"></i>
@@ -31,14 +39,6 @@
             </a>
           </div>
         </div>
-
-        <router-link to="/tools"
-          :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
-                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
-                   route.name === 'tools' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
-          <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
-          <span v-if="!isCollapsed" class="ml-3 truncate">效率工具</span>
-        </router-link>
 
         <router-link to="/showcase"
           :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
@@ -61,14 +61,6 @@
       </nav>
 
       <div class="mt-auto border-t border-gray-100 pt-2 px-2">
-        <router-link to="/tools/submit"
-          :class="['flex items-center rounded-lg transition-colors cursor-pointer',
-                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
-                   route.name === 'ToolSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
-          <i class="fas fa-plus-circle"></i>
-          <span v-if="!isCollapsed" class="ml-3 truncate">工具提交</span>
-        </router-link>
-
         <div v-if="!isCollapsed" class="p-4 pt-2 text-xs text-center text-gray-400 border-t border-gray-100 mt-2">
           &copy; 2025 SoftLink Platform
         </div>
