@@ -18,7 +18,7 @@
           type="text"
           placeholder="搜索课程名称、教师..."
           class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md"
-        />
+        >
         <div class="absolute right-4 top-1/2 -translate-y-1/2">
           <i class="fas fa-search text-gray-400 group-hover:text-blue-500 transition-colors"></i>
         </div>
@@ -28,20 +28,20 @@
         <div class="relative" ref="avatarRef">
           <div
             v-if="isAuthenticated"
-            @click="showUserMenu = !showUserMenu"
             class="cursor-pointer relative"
+            @click="showUserMenu = !showUserMenu"
           >
             <img
               :src="userInfo.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'"
               class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover"
               alt="Avatar"
-            />
+            >
             <div
               class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
             ></div>
           </div>
 
-          <button v-else @click="goToLogin" class="btn-primary-outline text-sm">
+          <button v-else class="btn-primary-outline text-sm" @click="goToLogin">
             登录
           </button>
 
@@ -71,8 +71,8 @@
               </a>
               <div class="h-px bg-gray-100 my-1"></div>
               <p
-                @click="handleLogout"
                 class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"
+                @click="handleLogout"
               >
                 <i class="fas fa-sign-out-alt mr-2"></i>退出登录
               </p>
@@ -87,13 +87,13 @@
         <button
           v-for="type in courseTypes"
           :key="type"
-          @click="activeType = type"
           class="px-5 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
           :class="
             activeType === type
               ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
               : 'text-gray-600 hover:bg-white hover:text-blue-600'
           "
+          @click="activeType = type"
         >
           {{ type }}
         </button>
@@ -102,30 +102,30 @@
 
     <div class="space-y-16">
       <div
-        v-for="(group, semesterKey) in groupedCourses"
-        :key="semesterKey"
-        :id="`section-${semesterKey}`"
+        v-for="semesterItem in groupedCourses"
+        :key="semesterItem.key"
+        :id="`section-${semesterItem.key}`"
         class="relative scroll-target"
       >
         <div class="flex items-center gap-3 mb-6">
           <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
           <h2 class="text-xl font-bold text-gray-800 tracking-tight">
-            {{ semesterMap[semesterKey] }}
+            {{ semesterItem.name }}
           </h2>
           <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-            {{ group.length }} 门课程
+            {{ semesterItem.list.length }} 门课程
           </span>
         </div>
 
         <div
-          v-if="group.length > 0"
+          v-if="semesterItem.list.length > 0"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           <div
-            v-for="course in group"
+            v-for="course in semesterItem.list"
             :key="course.id"
-            @click="goToDetail(course.id)"
             class="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
+            @click="goToDetail(course.id)"
           >
             <div
               class="absolute top-0 left-0 w-full h-1.5"
@@ -189,11 +189,13 @@
       </div>
 
       <div
-        v-if="Object.values(groupedCourses).every((g) => g.length === 0)"
+        v-if="groupedCourses.every((g) => g.list.length === 0)"
         class="text-center py-20"
       >
-        <div class="text-gray-400 mb-4">没有找到匹配的课程</div>
-        <button @click="resetFilter" class="text-blue-600 text-sm hover:underline">
+        <div class="text-gray-400 mb-4">
+          没有找到匹配的课程
+        </div>
+        <button class="text-blue-600 text-sm hover:underline" @click="resetFilter">
           清除筛选条件
         </button>
       </div>
@@ -414,7 +416,7 @@ const mockCourses = [
   },
   {
     id: 402,
-    name: '计算机网络',
+    name: '计算机网络上',
     code: 'CS2004',
     semester: '2-2',
     type: '专必',
@@ -425,7 +427,7 @@ const mockCourses = [
   },
   {
     id: 501,
-    name: '计算机网络',
+    name: '计算机网络下',
     code: 'CS3001',
     semester: '3-1',
     type: '专必',
@@ -491,23 +493,43 @@ const filteredList = computed(() => {
   })
 })
 
+// [修改] 将 groupedCourses 改为返回有序数组
+// 逻辑：有结果的学期排在前面，无结果的排在后面，组内保持 '1-1' -> '4-2' 的顺序
 const groupedCourses = computed(() => {
-  const groups = {
-    '1-1': [],
-    '1-2': [],
-    '2-1': [],
-    '2-2': [],
-    '3-1': [],
-    '3-2': [],
-    '4-1': [],
-    '4-2': []
-  }
+  const semesterOrder = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2']
+
+  // 1. 初始化容器
+  const groupsObj = {}
+  semesterOrder.forEach((key) => {
+    groupsObj[key] = []
+  })
+
+  // 2. 填充数据
   filteredList.value.forEach((course) => {
-    if (groups[course.semester]) {
-      groups[course.semester].push(course)
+    if (groupsObj[course.semester]) {
+      groupsObj[course.semester].push(course)
     }
   })
-  return groups
+
+  // 3. 转换为数组: [{ key: '1-1', name: '大一上', list: [...] }, ...]
+  const groupsArray = semesterOrder.map((key) => ({
+    key: key,
+    name: semesterMap[key],
+    list: groupsObj[key]
+  }))
+
+  // 4. 排序
+  return groupsArray.sort((a, b) => {
+    const aHas = a.list.length > 0
+    const bHas = b.list.length > 0
+
+    // 有内容的排前面 (-1), 没内容的排后面 (1)
+    if (aHas && !bHas) return -1
+    if (!aHas && bHas) return 1
+
+    // 都有内容 或 都没内容时，保持原有的数组索引顺序 (即学期时间顺序)
+    return 0
+  })
 })
 
 // 5. 交互逻辑
