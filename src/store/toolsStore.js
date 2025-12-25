@@ -74,8 +74,16 @@ export const useToolsStore = defineStore('tools', () => {
 
   // ============ Actions ============
   // 1. 初始化认证状态：调用 Vuex 的检查登录状态
-  const initAuth = () => {
-    vuexStore.dispatch('checkLoginStatus')
+  const initAuth = async () => {
+    // 检查本地是否有 token
+    const token = localStorage.getItem('token') // 假设 token 存在 localStorage
+    if (token) {
+      // 有 token，尝试获取用户信息来验证 token 有效性
+      await fetchUserProfile()
+    } else {
+      // 无 token，确认为游客
+      isAuthenticated.value = false
+    }
   }
   // 2. 用户登录：调用 Vuex 的 loginSuccess action 同步状态
   const login = async (credentials) => {
@@ -83,8 +91,12 @@ export const useToolsStore = defineStore('tools', () => {
       const response = await HttpManager.loginIn(credentials)
       if (response.code === 200 && response.data) {
         const { token, ...userData } = response.data
-        // 调用 Vuex 的 action 更新状态（由 Vuex 统一维护）
+        // 更新 Vuex
         await vuexStore.dispatch('loginSuccess', { userInfo: userData, token })
+
+        // 更新本地认证状态 -> 已登录
+        isAuthenticated.value = true
+
         return { success: true, user: userData, token }
       } else {
         return {
@@ -124,19 +136,23 @@ export const useToolsStore = defineStore('tools', () => {
   // 4. 获取用户资料：更新后同步到 Vuex
   const fetchUserProfile = async () => {
     try {
-      if (!isAuthenticated.value) return null
-
       const response = await HttpManager.getUserProfile()
+
+      // 判断逻辑：如果返回 code 200 且有数据，视为已登录
       if (response.code === 200 && response.data) {
-        // 调用 Vuex 的 mutation 更新用户信息
+        isAuthenticated.value = true
         vuexStore.commit('setUserInfo', response.data)
-        // 更新 localStorage（也可由 Vuex 的 action 统一处理）
         localStorage.setItem('user', JSON.stringify(response.data))
         return response.data
+      } else {
+        // 否则视为游客
+        throw new Error('未登录')
       }
-      return null
     } catch (error) {
-      console.error('获取用户资料失败:', error)
+      console.log('当前为游客模式或获取资料失败')
+      // 失败时重置为游客状态
+      isAuthenticated.value = false
+      vuexStore.commit('setUserInfo', {}) // 清空 Vuex 用户信息
       return null
     }
   }
@@ -152,6 +168,7 @@ export const useToolsStore = defineStore('tools', () => {
     } finally {
       // 由 Vuex 统一清除状态
       vuexStore.dispatch('logout')
+      isAuthenticated.value = false
     }
   }
 
@@ -285,26 +302,23 @@ export const useToolsStore = defineStore('tools', () => {
   // 6. 切换收藏状态
   const toggleToolCollection = async (toolId, resourceType = 'tool') => {
     try {
+      // 关键：拦截游客操作
       if (!isAuthenticated.value) {
+        // 这里抛出错误，前端捕获后可提示“请先登录”
         throw new Error('请先登录')
       }
 
-      // 先检查是否已收藏
       const userCollection = await HttpManager.getUserCollection()
-      // const userCollection = false
       const isCollected = userCollection.data?.some(item =>
         item.resourceId === toolId && item.resourceType === resourceType
       )
 
       if (isCollected) {
-        // 取消收藏
         await HttpManager.removeToolCollection(toolId, resourceType)
       } else {
-        // 添加收藏
         await HttpManager.toggleToolCollection(toolId, resourceType)
       }
-
-      return !isCollected // 返回新的收藏状态
+      return !isCollected
     } catch (error) {
       console.error('切换收藏失败:', error)
       throw error

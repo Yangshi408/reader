@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { HttpManager } from '@/api/index.js'
+import { mapActions } from 'vuex'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -47,53 +47,38 @@ export default {
       userProfile: null
     }
   },
+  computed: {
+    user () {
+      return this.$store.state.user
+    }
+  },
   async mounted () {
-    // 获取用户信息
-    await this.fetchUserProfile()
+    // 直接使用store中的用户信息
+    if (this.$store.state.isLogin) {
+      this.userProfile = this.$store.state.user
+    }
   },
   methods: {
-    // 获取用户信息
-    async fetchUserProfile () {
-      try {
-        const response = await HttpManager.getUserProfile()
-        if (response && response.data) {
-          this.userProfile = response.data
-        }
-      } catch (error) {
-        console.error('获取用户信息失败:', error)
-        // 如果获取用户信息失败，仍然允许退出
-      }
-    },
+    ...mapActions(['logout']),
 
     // 处理退出登录
     async handleLogout () {
       this.loading = true
 
       try {
-        // 调用退出API
-        await HttpManager.logout()
+        await this.logout()
 
-        // 清除本地存储的token
-        localStorage.removeItem('token')
-        localStorage.removeItem('userInfo')
-
-        // 显示成功消息
         ElMessage({
           message: '已成功退出登录',
           type: 'success',
           duration: 2000
         })
 
-        // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
           this.$router.push('/login')
         }, 1500)
       } catch (error) {
         console.error('退出登录失败:', error)
-
-        // 即使API调用失败，也清除本地token并跳转
-        localStorage.removeItem('token')
-        localStorage.removeItem('userInfo')
 
         ElMessage({
           message: '已退出登录',
