@@ -25,6 +25,7 @@ export const useToolsStore = defineStore('tools', () => {
   })
 
   const currentToolDetail = ref(null)
+  const disableToolSubmit = ref(false)
 
   // ============ Getters ============
   // 1. 按分类分组工具
@@ -270,11 +271,8 @@ export const useToolsStore = defineStore('tools', () => {
 
       if (response.code === 200 && response.data) {
         currentToolDetail.value = response.data
-
         // 增加浏览量
         await addToolView(toolId)
-
-        return response.data
       }
 
       // 如果API失败，尝试从本地数据查找
@@ -292,10 +290,10 @@ export const useToolsStore = defineStore('tools', () => {
     } catch (error) {
       console.error('增加浏览量失败:', error)
       // 模拟增加浏览量
-      console.log('原始浏览量：', mockData.find(i => i.id === toolId).views)
       const targetTool = toolsList.value.find(tool => tool.id === toolId)
-      targetTool.views += 1
-      console.log('新浏览量：', mockData.find(i => i.id === toolId).views)
+      if (targetTool) {
+        targetTool.views += 1
+      }
     }
   }
 
@@ -339,6 +337,11 @@ export const useToolsStore = defineStore('tools', () => {
       console.error('AI分析失败:', error)
       throw error
     }
+  }
+
+  // 8. 禁用/启用工具提交
+  const setToolSubmitDisabled = (disabled) => {
+    disableToolSubmit.value = disabled
   }
 
   // 加载更多工具
@@ -388,6 +391,7 @@ export const useToolsStore = defineStore('tools', () => {
     searchResults,
     activeFilters,
     currentToolDetail,
+    disableToolSubmit,
 
     // Getters
     toolsByCategory,
@@ -410,7 +414,8 @@ export const useToolsStore = defineStore('tools', () => {
     getToolDetail,
     addToolView,
     toggleToolCollection,
-    analyzeUrl
+    analyzeUrl,
+    setToolSubmitDisabled
     // loadMoreTools,
     // resetToolsList
   }

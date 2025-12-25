@@ -1,3 +1,7 @@
+import ToolDetail from '@/pages/tool/ToolDetail.vue'
+import ToolsLayout from '@/pages/tool/ToolsLayout.vue'
+import ToolsList from '@/pages/tool/ToolsList.vue'
+import ToolSubmit from '@/pages/tool/ToolSubmit.vue'
 import { createRouter, createWebHistory, RouterView } from 'vue-router'
 
 const constantRoutes = [
@@ -46,22 +50,22 @@ const constantRoutes = [
   // 工具页面导航
   {
     path: '/tools',
-    component: () => import('@/pages/tool/ToolsLayout.vue'), // 工具模块主布局
+    component: ToolsLayout, // 工具模块主布局
     children: [
       {
         path: '',
         name: 'ToolsList',
-        component: () => import('@/pages/tool/ToolsList.vue') // 工具列表主页
+        component: ToolsList // 工具列表主页
       },
       {
         path: 'detail/:id',
         name: 'ToolDetail',
-        component: () => import('@/pages/tool/ToolDetail.vue') // 工具详情页
+        component: ToolDetail // 工具详情页
       },
       {
         path: 'submit',
         name: 'ToolSubmit',
-        component: () => import('@/pages/tool/ToolSubmit.vue') // 工具提交页
+        component: ToolSubmit // 工具提交页
       }
     ]
   },
