@@ -203,7 +203,7 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
-@import '../../index.css';
+@import '@/assets/css/index.css';
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out;

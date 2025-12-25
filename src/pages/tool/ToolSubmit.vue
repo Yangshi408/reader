@@ -413,7 +413,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import '../../index.css';
+@import '@/assets/css/index.css';
 
 /* ::-webkit-scrollbar {
   width: 4px;

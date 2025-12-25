@@ -192,7 +192,7 @@ onBeforeRouteUpdate((to, from, next) => {
 </script>
 
 <style scoped>
-@import '../../index.css';
+@import '@/assets/css/index.css';
 /* 需要在样式部分添加 */
 .fade-enter-active,
 .fade-leave-active {

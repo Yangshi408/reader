@@ -678,7 +678,7 @@ onUnmounted(() => {
 
 <style scoped>
 /* 样式保持不变 */
-@import '../../index.css';
+@import '@/assets/css/index.css';
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;

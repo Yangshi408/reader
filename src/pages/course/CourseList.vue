@@ -604,7 +604,7 @@ onUnmounted(() => {
 
 <style scoped>
 /* 复用部分 ToolsList 的样式 */
-@import '../../index.css';
+@import '@/assets/css/index.css';
 
 .glass-header {
   background: rgba(255, 255, 255, 0.7);

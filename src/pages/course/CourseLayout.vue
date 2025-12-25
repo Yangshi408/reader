@@ -169,5 +169,5 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import '../../index.css';
+@import '@/assets/css/index.css';
 </style>
