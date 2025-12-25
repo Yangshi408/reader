@@ -25,7 +25,7 @@
         <!-- 贡献者 -->
         <div
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="userInfo.avatar" class="w-5 h-5 rounded-full">
+          <img :src="userInfo.avatar || '/default-avatar.png'" class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">Admin</span>
         </div>
       </div>
@@ -244,6 +244,7 @@
     </div>
   </div>
   <!-- 加载状态 -->
+
   <div v-else-if="isLoading" class="max-w-5xl mx-auto">
     <!-- 工具信息骨架屏 -->
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
