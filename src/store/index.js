@@ -104,6 +104,7 @@ export default createStore({
     },
 
     // 注册
+    // eslint-disable-next-line no-unused-vars
     async register ({ commit }, userData) {
       try {
         const params = new FormData()

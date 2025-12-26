@@ -1,276 +1,423 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
-    <div class="flex items-center gap-2 text-sm text-gray-500 px-1">
-      <span
-        class="hover:text-blue-600 cursor-pointer flex items-center gap-1 transition-colors"
-        @click="goBack"
-      >
-        <i class="fas fa-arrow-left"></i> 返回列表
-      </span>
-      <span class="text-gray-300">/</span>
-      <span class="text-gray-800 font-medium">课程详情</span>
-    </div>
-
-    <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-sm border border-white/50">
-      <div class="flex items-start gap-6 md:gap-8">
-        <div
-          class="w-48 shrink-0 flex flex-col gap-4 items-center"
-          style="width: 144px"
-        >
-          <div class="w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md border border-gray-100 relative group">
-            <img
-              :src="courseInfo.cover"
-              alt="Course Cover"
-              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            >
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
+  <div v-if="course && !isLoading" class="course-container course-animate--fade-in max-w-5xl mx-auto">
+    <!-- 课程信息区域 -->
+    <div class="course-detail-card mb-8">
+      <div class="course-detail-card__content">
+        <!-- 课程头部 -->
+        <div class="course-detail-card__header">
+          <!-- 课程图标区域 -->
+          <div class="course-detail-card__icon">
+            <img :src="course.cover" class="w-full h-full object-contain" alt="课程封面">
           </div>
 
-          <button
-            @click="toggleLike"
-            class="group relative w-auto min-w-[110px] px-6 py-3 rounded-xl font-medium text-sm transition-all duration-300 ease-out active:scale-95 flex items-center justify-center gap-2 border"
-            :class="[
-              isLiked
-                ? 'bg-red-50 border-red-200 text-red-500 shadow-inner'
-                : 'bg-white border-gray-200 text-gray-600 shadow-sm hover:border-blue-300 hover:text-blue-600 hover:shadow-md hover:-translate-y-0.5'
-            ]"
-          >
-            <i
-              class="text-base transition-transform duration-300"
-              :class="[
-                isLiked
-                  ? 'fas fa-heart scale-110 drop-shadow-sm'
-                  : 'far fa-heart group-hover:scale-110'
-              ]"
-            ></i>
-            <span>{{ isLiked ? '已收藏' : '收藏' }}</span>
-          </button>
-        </div>
+          <!-- 课程基本信息 -->
+          <div class="flex-1">
+            <!-- 课程元标签 -->
+            <div class="course-detail-card__meta mb-4">
+              <span class="meta-tag category-tag">{{ course.level }}</span>
+              <span class="meta-tag level-tag">{{ course.type }}</span>
+              <span class="meta-tag status-tag">{{ course.duration }}</span>
+            </div>
 
-        <div class="flex-1 min-w-0 flex flex-col">
-          <div class="mb-4">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 tracking-tight mb-3">
-              {{ courseInfo.name }}
-            </h1>
+            <!-- 课程标题 -->
+            <h1 class="course-detail-card__title">{{ course.name }}</h1>
 
-            <div class="flex flex-wrap gap-3 text-sm">
-              <span class="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-lg border border-gray-200 hover:bg-white hover:shadow-sm transition-all duration-300">
-                <i class="fas fa-user-tie mr-2 text-blue-500"></i> {{ courseInfo.teacher }}
+            <!-- 课程描述 -->
+            <p class="course-detail-card__description mb-6">
+              {{ course.description }}
+            </p>
+
+            <!-- 课程标签 -->
+            <div class="course-detail-card__tags mb-6">
+              <span class="course-card__tag cursor-pointer" :title="course.semester || course.category">
+                {{ course.semester || course.category }}
               </span>
-              <span class="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-lg border border-gray-200 hover:bg-white hover:shadow-sm transition-all duration-300">
-                <i class="far fa-clock mr-2 text-green-500"></i> {{ courseInfo.semester }}
-              </span>
-              <span class="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-lg border border-gray-200 hover:bg-white hover:shadow-sm transition-all duration-300">
-                <i class="fas fa-graduation-cap mr-2 text-orange-500"></i> {{ courseInfo.credit }} 学分
+              <span
+                v-for="tagId in course.tags"
+                :key="tagId"
+                @click="goToCoursesListByTag(tagId)"
+                class="course-card__tag cursor-pointer hover:bg-gray-200 transition-colors"
+                :title="getTagById(tagId).name"
+              >
+                {{ getTagById(tagId).name }}
               </span>
             </div>
+
+            <!-- 课程统计信息 -->
+            <div class="course-detail-card__stats mb-6">
+              <!-- 收藏按钮 -->
+              <div class="course-detail-card__stats-item" @click="handleCollect" :title="isCollected ? '取消收藏' : '收藏课程'">
+                <i :class="[
+                  'mb-1 transition-transform hover:scale-110',
+                  isCollected ? 'fas fa-heart text-red-500' : 'far fa-heart text-gray-400'
+                ]"></i>
+                <span>{{ course.stars }}</span>
+              </div>
+
+              <!-- 浏览量 -->
+              <div class="course-detail-card__stats-item" title="浏览量">
+                <i class="fas fa-eye text-blue-400 mb-1"></i>
+                <span>{{ course.views }}</span>
+              </div>
+
+              <!-- 学生数 -->
+              <div class="course-detail-card__stats-item" title="学习人数">
+                <i class="fas fa-users text-green-400 mb-1"></i>
+                <span>{{ course.students }}</span>
+              </div>
+
+              <!-- 讲师信息 -->
+              <div class="course-detail-card__stats-item cursor-pointer hover:text-blue-600 transition-colors"
+                   @click="goToTeacher(course.teacherId)"
+                   :title="`查看${course.teacherName}的详情`">
+                <i class="fas fa-user-graduate text-purple-400 mb-1"></i>
+                <span class="text-xs">{{ course.teacherName }}</span>
+              </div>
+            </div>
+
+            <!-- 课程信息卡片 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-gray-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ course.chapters }}</div>
+                <div class="text-xs text-gray-500 mt-1">章节</div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-green-600">{{ course.durationHours }}</div>
+                <div class="text-xs text-gray-500 mt-1">课时</div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ course.rating }}</div>
+                <div class="text-xs text-gray-500 mt-1">评分</div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-orange-600">{{ course.lastUpdated }}</div>
+                <div class="text-xs text-gray-500 mt-1">更新</div>
+              </div>
+            </div>
+
+            <!-- 课程操作按钮 -->
+            <div class="course-detail-card__actions">
+              <a :href="course.url" target="_blank"
+                 class="action-button enroll">
+                开始学习 <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
+              </a>
+              <button @click="handleAddToPlan"
+                      class="action-button secondary">
+                <i class="fas fa-plus"></i> 加入学习计划
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="w-full h-px bg-gradient-to-r from-gray-200 via-gray-100 to-transparent mb-5"></div>
+    <!-- 课程大纲 -->
+    <div class="course-detail-card mb-8">
+      <h2 class="course-detail-card__section-title">
+        <i class="fas fa-list-ol"></i> 课程大纲
+      </h2>
+      <div class="course-detail-card__section-content">
+        <div class="course-modules__list">
+          <div v-for="chapter in course.syllabus" :key="chapter.id"
+               class="course-module-card">
+            <div class="course-module-card__header" @click="toggleChapter(chapter.id)">
+              <div class="course-module-card__title">
+                <i class="fas fa-play-circle text-blue-500"></i>
+                {{ chapter.title }}
+              </div>
+              <div class="text-sm text-gray-500">
+                {{ chapter.duration }} • {{ chapter.type }}
+              </div>
+            </div>
+            <div v-if="chapter.expanded && chapter.description" class="course-module-card__lessons">
+              <div class="course-lesson-card">
+                <div class="course-lesson-card__description">
+                  {{ chapter.description }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <!-- 讲师介绍 -->
+    <div class="course-detail-card mb-8">
+      <h2 class="course-detail-card__section-title">
+        <i class="fas fa-user-graduate"></i> 讲师介绍
+      </h2>
+      <div class="course-detail-card__section-content">
+        <div class="flex items-start gap-6">
+          <img :src="course.teacherAvatar" class="w-24 h-24 rounded-full border-2 border-blue-100">
           <div class="flex-1">
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span class="w-1 h-4 bg-blue-500 rounded-full"></span>
-              课程简介
-            </h3>
-            <p class="text-gray-600 leading-7 text-justify whitespace-pre-line text-sm md:text-base">
-              {{ courseInfo.description }}
+            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ course.teacherName }}</h3>
+            <div class="flex items-center gap-4 text-sm text-gray-500 mb-3">
+              <span class="flex items-center gap-1">
+                <i class="fas fa-briefcase"></i> {{ course.teacherTitle }}
+              </span>
+              <span class="flex items-center gap-1">
+                <i class="fas fa-graduation-cap"></i> {{ course.teacherExperience }}
+              </span>
+            </div>
+            <p class="text-gray-600 leading-relaxed">
+              {{ course.teacherBio }}
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-sm border border-white/50">
-      <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
-          相关资料
-        </h2>
-        <button
-          class="group relative overflow-hidden px-6 py-2.5 bg-white text-blue-600 text-sm font-bold rounded-full shadow-lg shadow-blue-500/10 border border-blue-100 hover:border-blue-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-300"
-          @click="goToUpload"
-        >
-          <div
-            class="absolute inset-0 bg-blue-600/10 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"
-          ></div>
+    <!-- 评论区域 -->
+    <div class="course-detail-card">
+      <h2 class="course-detail-card__section-title">
+        <i class="far fa-comment-dots"></i> 课程评价
+        <span class="text-sm font-normal text-gray-500">
+          ({{ comments.length }})
+        </span>
+      </h2>
 
-          <div class="relative z-10 flex items-center gap-2">
-            <i
-              class="fas fa-cloud-upload-alt text-lg group-hover:-translate-y-1 group-hover:scale-110 transform transition-transform duration-300 ease-out"
-            ></i>
-            <span class="tracking-wide">资料上传</span>
+      <!-- 评论排序和分页 -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-gray-600">排序方式:</span>
+          <div class="course-form-group">
+            <select v-model="sortType" @change="sortComments"
+                    class="course-form-group__input w-32">
+              <option value="latest">最新</option>
+              <option value="hot">最热</option>
+            </select>
           </div>
+        </div>
+
+        <div v-if="pagination.totalPages > 1" class="flex items-center gap-2">
+          <button
+            @click="prevPage"
+            :disabled="pagination.page === 1"
+            class="course-button course-button--secondary course-button--sm"
+          >
+            上一页
+          </button>
+          <span class="text-sm text-gray-600">
+            第 {{ pagination.page }} / {{ pagination.totalPages }} 页
+          </span>
+          <button
+            @click="nextPage"
+            :disabled="pagination.page === pagination.totalPages"
+            class="course-button course-button--secondary course-button--sm"
+          >
+            下一页
+          </button>
+        </div>
+      </div>
+
+      <!-- 评论列表 -->
+      <div v-if="currentPageComments.length > 0" class="space-y-6 mb-8">
+        <div
+          v-for="comment in currentPageComments"
+          :key="comment.id"
+          class="course-lesson-card"
+        >
+          <div class="course-lesson-card__header">
+            <img
+              :src="comment.avatar || '/default-avatar.png'"
+              class="w-10 h-10 rounded-full border border-gray-300"
+              alt="用户头像"
+            >
+            <div class="course-lesson-card__title">
+              <div class="font-medium text-gray-800">
+                {{ comment.nickname || comment.username || '匿名用户' }}
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="text-xs text-gray-500">
+                  {{ formatTime(comment.createdAt) }}
+                </div>
+                <div class="flex text-yellow-400">
+                  <i v-for="i in 5" :key="i"
+                     :class="i <= comment.rating ? 'fas fa-star' : 'far fa-star'"
+                     class="text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <!-- 点赞按钮 -->
+              <button
+                @click="handleLikeComment(comment.id)"
+                class="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                :class="{ 'text-red-500': comment.isLiked }"
+                :disabled="!isAuthenticated"
+              >
+                <i :class="comment.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i>
+                <span class="text-sm">{{ comment.likes || 0 }}</span>
+              </button>
+              <!-- 删除按钮 -->
+              <button
+                v-if="checkCanDelete(comment)"
+                @click="handleDeleteComment(comment.id)"
+                class="text-gray-400 hover:text-red-500 transition-colors text-sm"
+                title="删除评论"
+              >
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+          <!-- 评论内容 -->
+          <div class="course-lesson-card__description whitespace-pre-wrap">
+            {{ comment.content }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 暂无评论 -->
+      <div v-else-if="!loadingComments" class="bg-gray-50 rounded-xl p-8 text-center text-gray-400 mb-8">
+        暂无评价，快来发表第一个评价吧~
+      </div>
+
+      <!-- 加载状态 -->
+      <div v-if="loadingComments" class="flex items-center justify-center py-8">
+        <i class="fas fa-spinner fa-spin text-xl text-blue-500 mr-2"></i>
+        <span class="text-gray-500">加载评价中...</span>
+      </div>
+
+      <!-- 发表评价 -->
+      <div v-if="isAuthenticated" class="mt-8">
+        <div class="flex items-start gap-4">
+          <img
+            :src="userInfo.avatar || '/default-avatar.png'"
+            class="w-10 h-10 rounded-full border border-gray-300 flex-shrink-0"
+            alt="我的头像"
+          >
+          <div class="flex-1">
+            <div class="flex items-center gap-4 mb-3">
+              <span class="text-sm text-gray-600">评分:</span>
+              <div class="flex text-yellow-400">
+                <i v-for="i in 5" :key="i"
+                   @click="newRating = i"
+                   :class="i <= newRating ? 'fas fa-star cursor-pointer' : 'far fa-star cursor-pointer'"
+                   class="text-xl"></i>
+              </div>
+            </div>
+            <div class="course-form-group">
+              <textarea
+                v-model="newComment"
+                placeholder="写下你的课程评价... (支持emoji表情)"
+                rows="3"
+                class="course-form-group__textarea"
+                @keydown.ctrl.enter="submitComment"
+                maxlength="500"
+              ></textarea>
+              <div class="text-sm text-gray-500 mt-1 text-right">
+                {{ newComment.length }}/500
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button
+                @click="submitComment"
+                :disabled="!newComment.trim() || submittingComment"
+                class="course-button course-button--primary course-button--md"
+              >
+                <i v-if="submittingComment" class="fas fa-spinner fa-spin"></i>
+                发表评价
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 未登录提示 -->
+      <div v-else class="mt-8 p-6 bg-gray-50 rounded-xl text-center">
+        <p class="text-gray-600 mb-3">登录后即可发表评价</p>
+        <button
+          @click="goToLogin"
+          class="course-button course-button--primary"
+        >
+          立即登录
         </button>
       </div>
+    </div>
+  </div>
 
-      <div class="space-y-8">
-        <div>
-          <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
-              <i class="fas fa-book"></i>
-            </span>
-            书籍文档
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div
-              v-for="book in resources.docs"
-              :key="book.id"
-              class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md bg-white hover:bg-blue-50/10 transition-all duration-300 cursor-pointer group"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                  <i class="far fa-file-pdf text-red-500 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                  <div class="text-gray-700 font-medium group-hover:text-blue-700 text-sm truncate transition-colors">
-                    {{ book.title }}
-                  </div>
-                  <div class="text-xs text-gray-400 mt-0.5">
-                    {{ book.size }}
-                  </div>
-                </div>
-              </div>
-              <button class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0">
-                <i class="fas fa-download text-sm"></i>
-              </button>
+  <!-- 加载状态 -->
+  <div v-else-if="isLoading" class="max-w-5xl mx-auto">
+    <!-- 骨架屏 -->
+    <div class="course-detail-card mb-8 animate-pulse">
+      <div class="course-detail-card__content">
+        <div class="course-detail-card__header">
+          <!-- 左侧封面区域 -->
+          <div class="course-detail-card__icon bg-gray-200"></div>
+
+          <!-- 右侧内容区域 -->
+          <div class="flex-1">
+            <!-- 类型骨架 -->
+            <div class="flex gap-3 mb-4">
+              <div class="w-16 h-6 bg-gray-200 rounded"></div>
+              <div class="w-12 h-6 bg-gray-200 rounded"></div>
+              <div class="w-20 h-6 bg-gray-200 rounded"></div>
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm border border-purple-100">
-              <i class="fas fa-video"></i>
-            </span>
-            视频网课
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div
-              v-for="video in resources.videos"
-              :key="video.id"
-              class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-md bg-white hover:bg-purple-50/10 transition-all duration-300 cursor-pointer group"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                  <i class="fab fa-youtube text-red-500 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                  <div class="text-gray-700 font-medium group-hover:text-purple-700 text-sm truncate transition-colors">
-                    {{ video.title }}
-                  </div>
-                  <div class="text-xs text-gray-400 mt-0.5">
-                    {{ video.source }}
-                  </div>
-                </div>
-              </div>
-              <i class="fas fa-external-link-alt text-xs text-gray-300 group-hover:text-purple-500 transition-colors shrink-0"></i>
+            <!-- 标题骨架 -->
+            <div class="h-8 bg-gray-300 rounded mb-4 max-w-md"></div>
+
+            <!-- 描述骨架 -->
+            <div class="space-y-2 mb-6">
+              <div class="h-4 bg-gray-200 rounded"></div>
+              <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+              <div class="h-4 bg-gray-200 rounded w-4/6"></div>
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-sm border border-green-100">
-              <i class="fas fa-tools"></i>
-            </span>
-            相关工具
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div
-              v-for="tool in resources.tools"
-              :key="tool.id"
-              class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md bg-white hover:bg-green-50/10 transition-all duration-300 cursor-pointer group"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
-                  <i class="fas fa-cube text-gray-500 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                  <div class="text-gray-700 font-medium group-hover:text-green-700 text-sm truncate transition-colors">
-                    {{ tool.name }}
-                  </div>
-                </div>
-              </div>
-              <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-md border border-green-100 shrink-0 font-medium">
-                {{ tool.tag }}
-              </span>
+            <!-- 信息卡片骨架 -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+              <div v-for="i in 4" :key="i" class="h-16 bg-gray-100 rounded-xl"></div>
+            </div>
+
+            <!-- 按钮骨架 -->
+            <div class="flex gap-4">
+              <div class="w-32 h-10 bg-gray-300 rounded-lg"></div>
+              <div class="w-32 h-10 bg-gray-200 rounded-lg"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-sm border border-white/50">
-      <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2 border-l-4 border-amber-500 pl-3">
-          评论分享
-          <span class="text-sm font-normal text-gray-400 ml-2">({{ comments.length }})</span>
-        </h2>
-
-        <div class="flex bg-gray-100 rounded-lg p-1 text-xs font-medium">
-          <button
-            @click="sortType = 'hot'"
-            class="px-3 py-1.5 rounded-md transition-all duration-300"
-            :class="sortType === 'hot' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-          >
-            按热度
-          </button>
-          <button
-            @click="sortType = 'time'"
-            class="px-3 py-1.5 rounded-md transition-all duration-300"
-            :class="sortType === 'time' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-          >
-            按时间
-          </button>
+    <!-- 课程大纲骨架屏 -->
+    <div class="course-detail-card mb-8 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-blue-200 rounded"></div>
+        <div class="h-6 w-24 bg-gray-300 rounded"></div>
+      </div>
+      <div class="course-detail-card__section-content">
+        <div class="space-y-3">
+          <div v-for="i in 3" :key="i" class="h-16 bg-gray-100 rounded-xl"></div>
         </div>
       </div>
+    </div>
 
-      <div class="space-y-6">
-        <div
-          v-for="comment in sortedComments"
-          :key="comment.id"
-          class="flex gap-4 animate-fade-in group"
-        >
-          <img
-            :src="comment.avatar"
-            class="w-10 h-10 rounded-full bg-gray-200 border border-gray-100 shrink-0 transition-transform group-hover:scale-110"
-            alt="avatar"
-          >
-
-          <div class="flex-1 border-b border-gray-50 pb-6">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <div class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                  {{ comment.user }}
-                  <span v-if="comment.isLiked" class="text-xs font-normal text-amber-500 bg-amber-50 px-1.5 rounded border border-amber-100">
-                    <i class="fas fa-star text-[10px] mr-0.5"></i> 优质评论
-                  </span>
-                </div>
-                <div class="text-xs text-gray-400 mt-0.5">
-                  {{ comment.time }}
-                </div>
-              </div>
-
-              <button
-                class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors group/like"
-                @click="likeComment(comment.id)"
-              >
-                <i :class="[comment.isLiked ? 'fas text-red-500' : 'far', 'fa-thumbs-up text-sm group-hover/like:scale-125 transition-transform']"></i>
-                <span>{{ comment.likes }}</span>
-              </button>
-            </div>
-
-            <p class="text-gray-600 text-sm leading-relaxed">
-              {{ comment.content }}
-            </p>
+    <!-- 讲师介绍骨架屏 -->
+    <div class="course-detail-card mb-8 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-green-200 rounded"></div>
+        <div class="h-6 w-24 bg-gray-300 rounded"></div>
+      </div>
+      <div class="course-detail-card__section-content">
+        <div class="flex gap-6 items-start">
+          <div class="w-24 h-24 rounded-full bg-gray-200"></div>
+          <div class="flex-1 space-y-3">
+            <div class="h-6 bg-gray-300 rounded w-1/3"></div>
+            <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div class="h-4 bg-gray-200 rounded w-full"></div>
+            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="text-center pt-2">
-          <button class="text-gray-400 text-sm hover:text-blue-600 transition-colors flex items-center justify-center gap-1 mx-auto">
-            查看更多评论 <i class="fas fa-chevron-down animate-bounce text-xs mt-0.5"></i>
-          </button>
-        </div>
+    <!-- 评价区域骨架屏 -->
+    <div class="course-detail-card animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-gray-300 rounded"></div>
+        <div class="h-6 w-16 bg-gray-300 rounded"></div>
+        <div class="h-4 w-8 bg-gray-200 rounded"></div>
       </div>
     </div>
   </div>
@@ -278,115 +425,361 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { useCoursesStore } from '@/store/courseStore'
 import { ElMessage } from 'element-plus'
+import { HttpManager } from '@/api'
+import { storeToRefs } from 'pinia'
+import { predefinedTags } from '@/data/course/tags'
 
 const router = useRouter()
+const route = useRoute()
+const coursesStore = useCoursesStore()
 
-// 1. 状态管理
-const isLiked = ref(false)
-const sortType = ref('hot') // 'hot' | 'time'
+const {
+  userInfo,
+  isAuthenticated
+} = storeToRefs(coursesStore)
 
-// 2. Mock 数据
-const courseInfo = ref({
-  name: '面向对象程序设计',
-  teacher: '张伟',
-  semester: '大二上学期',
-  credit: '4.0',
-  cover: 'https://placehold.co/600x450/3b82f6/ffffff?text=C%2B%2B',
-  description: '本课程旨在深入讲解面向对象编程（OOP）的核心思想。通过 C++ 语言，学生将学习封装、继承、多态三大特性，并掌握 STL 标准模板库的使用。\n\n课程难点在于虚函数表的理解以及内存管理。建议同学们提前预习指针相关知识，并在实验课中多动手调试代码。'
+// 一、变量声明
+const course = ref(null)
+const isCollected = ref(false)
+const isLoading = ref(false)
+const comments = ref([])
+const loadingComments = ref(false)
+const submittingComment = ref(false)
+const newComment = ref('')
+const newRating = ref(5)
+const sortType = ref('latest')
+const pagination = ref({
+  page: 1,
+  pageSize: 4,
+  total: 0,
+  totalPages: 0
 })
 
-const resources = ref({
-  docs: [
-    { id: 1, title: 'C++ Primer Plus 重点章节笔记.pdf', size: '12MB' },
-    { id: 2, title: '2023年期末考试押题卷.pdf', size: '2.4MB' },
-    { id: 3, title: '实验报告通用模版.docx', size: '0.5MB' }
-  ],
-  videos: [
-    { id: 101, title: 'B站 - 侯捷 C++内存管理', source: '哔哩哔哩', url: '#' },
-    { id: 102, title: 'MOOC - 程序设计基础进阶', source: '中国大学MOOC', url: '#' }
-  ],
-  tools: [
-    { id: 201, name: 'Visual Studio Code', tag: '编辑器' },
-    { id: 202, name: 'CLion (JetBrains)', tag: 'IDE' }
-  ]
+// 二、计算属性
+const currentPageComments = computed(() => {
+  const start = (pagination.value.page - 1) * pagination.value.pageSize
+  const end = start + pagination.value.pageSize
+  return sortedComments.value.slice(start, end)
 })
 
-const comments = ref([
-  { id: 1, user: '秃头学长', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', time: '2023-12-20', content: '这门课的作业量真的很大！尤其是大作业，建议大家从期中就开始构思，不然期末会通宵写代码。老师人很好，给分比较公正。', likes: 124, isLiked: false },
-  { id: 2, user: '萌新小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', time: '2024-01-05', content: '求问各位学长学姐，期末考试重点考不考 STL 源码分析呀？我看 PPT 上讲了很多。', likes: 5, isLiked: false },
-  { id: 3, user: 'CodeMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', time: '2023-11-15', content: '推荐大家去看《Effective C++》，配合这门课食用效果更佳。', likes: 45, isLiked: true }
-])
-
-// 3. 计算属性：排序逻辑
 const sortedComments = computed(() => {
-  const list = [...comments.value]
-  if (sortType.value === 'hot') {
-    return list.sort((a, b) => b.likes - a.likes)
-  } else {
-    return list.sort((a, b) => new Date(b.time) - new Date(a.time))
+  const sorted = [...comments.value]
+  if (sortType.value === 'latest') {
+    return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } else if (sortType.value === 'hot') {
+    return sorted.sort((a, b) => {
+      if (b.likes !== a.likes) return b.likes - a.likes
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
   }
+  return sorted
 })
 
-// 4. 方法
-const goBack = () => {
-  if (window.history.length > 1) {
-    router.go(-1)
-  } else {
-    router.push({ name: 'CourseList' })
-  }
+// 三、方法
+const getTagById = (tagId) => {
+  return predefinedTags.find(tag => tag.id === tagId) || { name: tagId }
 }
 
-const toggleLike = () => {
-  isLiked.value = !isLiked.value
-  if (isLiked.value) {
-    ElMessage.success('课程已加入收藏夹')
-  } else {
-    ElMessage.info('已取消收藏')
-  }
-}
-
-const likeComment = (id) => {
-  const comment = comments.value.find(c => c.id === id)
-  if (comment) {
-    if (comment.isLiked) {
-      comment.likes--
-      comment.isLiked = false
-    } else {
-      comment.likes++
-      comment.isLiked = true
-    }
-  }
-}
-
-const goToUpload = () => {
-  // 假设当前课程ID为 123 (实际应从 API 获取的 id 字段取，这里暂用 123 模拟)
-  // 如果你的 courseInfo 中包含 id，请使用 courseInfo.value.id
-  const currentCourseId = '123'
+const goToCoursesListByTag = (tagId) => {
+  const tag = getTagById(tagId)
   router.push({
-    name: 'CourseSubmit',
+    name: 'CoursesList',
     query: {
-      courseId: currentCourseId,
-      courseName: courseInfo.value.name
+      tagId,
+      tagName: tag.name
     }
   })
 }
 
-onMounted(() => {
-  window.scrollTo(0, 0)
+const checkCollectionStatus = async (courseId) => {
+  try {
+    const response = await HttpManager.getUserCollection()
+    isCollected.value = response.data?.some(item =>
+      item.resourceId === parseInt(courseId) && item.resourceType === 'course'
+    )
+  } catch (error) {
+    console.error('检查收藏状态失败:', error)
+  }
+}
+
+const handleCollect = async () => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  try {
+    if (isCollected.value) {
+      await HttpManager.removeCourseCollection(course.value.id, 'course')
+    } else {
+      await HttpManager.toggleCourseCollection(course.value.id, 'course')
+    }
+
+    isCollected.value = !isCollected.value
+    ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
+  } catch (error) {
+    ElMessage.error(error.message || '切换收藏状态操作失败')
+  }
+}
+
+const handleAddToPlan = () => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  ElMessage.success('已添加到学习计划')
+}
+
+const goToTeacher = (teacherId) => {
+  router.push({ name: 'TeacherDetail', params: { id: teacherId } })
+}
+
+const loadCourseDetail = async (id) => {
+  isLoading.value = true
+  try {
+    const data = await coursesStore.getCourseDetail(id)
+    course.value = data
+
+    // 为章节添加展开状态
+    if (course.value.syllabus) {
+      course.value.syllabus = course.value.syllabus.map(chapter => ({
+        ...chapter,
+        expanded: false
+      }))
+    }
+
+    if (isAuthenticated.value) {
+      await checkCollectionStatus(id)
+    }
+    await fetchComments(id)
+  } catch (error) {
+    ElMessage.error('加载课程详情失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const toggleChapter = (chapterId) => {
+  if (course.value.syllabus) {
+    const chapter = course.value.syllabus.find(c => c.id === chapterId)
+    if (chapter) {
+      chapter.expanded = !chapter.expanded
+    }
+  }
+}
+
+const fetchComments = async (courseId) => {
+  loadingComments.value = true
+  try {
+    const response = await HttpManager.getCourseComments(courseId)
+    if (response.code === 200 && response.data) {
+      comments.value = response.data.map(comment => ({
+        ...comment,
+        canDelete: isAuthenticated.value &&
+          (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
+      }))
+      updatePagination()
+    }
+  } catch (error) {
+    console.error('获取评论失败:', error)
+    comments.value = []
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim()) {
+    ElMessage.warning('评价内容不能为空')
+    return
+  }
+  submittingComment.value = true
+  try {
+    const response = await HttpManager.addCourseComment(course.value.id, {
+      content: newComment.value.trim(),
+      rating: newRating.value
+    })
+    if (response.code === 200 && response.data) {
+      const newCommentData = {
+        ...response.data,
+        canDelete: true
+      }
+      comments.value.unshift(newCommentData)
+      updatePagination()
+      newComment.value = ''
+      newRating.value = 5
+      ElMessage.success('评价发表成功')
+    } else {
+      throw new Error(response.message || '发表评价失败')
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '发表失败')
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+const handleDeleteComment = async (commentId) => {
+  try {
+    await ElMessage.confirm('确定要删除这条评价吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await HttpManager.deleteCourseComment(course.value.id, commentId)
+    if (response.code === 200) {
+      const index = comments.value.findIndex(c => c.id === commentId)
+      if (index !== -1) {
+        comments.value.splice(index, 1)
+        updatePagination()
+      }
+      ElMessage.success('评价已删除')
+    } else {
+      throw new Error(response.message || '删除评价失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+const handleLikeComment = async (commentId) => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  try {
+    const response = await HttpManager.toggleCommentLike(course.value.id, commentId)
+    if (response.code === 200 && response.data) {
+      const commentIndex = comments.value.findIndex(c => c.id === commentId)
+      if (commentIndex !== -1) {
+        const comment = comments.value[commentIndex]
+        const wasLiked = comment.isLiked
+        comments.value[commentIndex] = {
+          ...comment,
+          likes: wasLiked ? comment.likes - 1 : comment.likes + 1,
+          isLiked: !wasLiked
+        }
+        if (sortType.value === 'hot') {
+          comments.value = [...comments.value]
+        }
+      }
+      ElMessage.success(response.data.isLiked ? '已点赞' : '已取消点赞')
+    } else {
+      throw new Error(response.message || '操作失败')
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '操作失败')
+  }
+}
+
+const checkCanDelete = (comment) => {
+  if (!isAuthenticated.value) return false
+  return userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin'
+}
+
+const sortComments = () => {
+  pagination.value.page = 1
+}
+
+const updatePagination = () => {
+  pagination.value.total = comments.value.length
+  pagination.value.totalPages = Math.ceil(comments.value.length / pagination.value.pageSize)
+}
+
+const prevPage = () => {
+  if (pagination.value.page > 1) {
+    pagination.value.page--
+  }
+}
+
+const nextPage = () => {
+  if (pagination.value.page < pagination.value.totalPages) {
+    pagination.value.page++
+  }
+}
+
+const goToLogin = () => {
+  router.push({ name: 'Login' })
+}
+
+const formatTime = (timeString) => {
+  if (!timeString) return ''
+  const now = new Date()
+  const commentTime = new Date(timeString)
+  const diffInSeconds = Math.floor((now - commentTime) / 1000)
+
+  if (diffInSeconds < 60) {
+    return '刚刚'
+  } else if (diffInSeconds < 3600) {
+    return `${Math.floor(diffInSeconds / 60)}分钟前`
+  } else if (diffInSeconds < 86400) {
+    return `${Math.floor(diffInSeconds / 3600)}小时前`
+  } else if (diffInSeconds < 2592000) {
+    return `${Math.floor(diffInSeconds / 86400)}天前`
+  } else {
+    return commentTime.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  }
+}
+
+// 四、生命周期函数
+onMounted(async () => {
+  const id = route.params.id
+  await loadCourseDetail(id)
 })
 </script>
 
-<style scoped>
-@import '../../index.css';
+<style lang="scss" scoped>
+/* 使用独立的课程样式文件 */
+@import '@/assets/css/courseIndex';
 
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+/* 覆盖按钮样式 */
+.action-button {
+  &.secondary {
+    background: $course-gray-100;
+    color: $course-gray-700;
+
+    &:hover {
+      background: $course-gray-200;
+    }
+  }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* 自定义课程详情样式 */
+.course-detail-card {
+  .course-detail-card__stats-item {
+    &:hover {
+      color: $course-primary;
+    }
+  }
+
+  .course-card__tag {
+    &:hover {
+      background: $course-gray-100;
+      color: $course-primary;
+    }
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .course-detail-card__header {
+    flex-direction: column;
+    gap: $course-spacing-lg;
+  }
+
+  .course-detail-card__icon {
+    width: 5rem;
+    height: 5rem;
+  }
 }
 </style>
