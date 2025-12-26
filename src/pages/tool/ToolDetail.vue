@@ -257,8 +257,8 @@ import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
 import { HttpManager } from '@/api'
 import { storeToRefs } from 'pinia'
-import { predefinedTags } from '@/data/tags'
-import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/mockData'
+import { predefinedTags } from '@/data/tool/tags'
+import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/tool/mockData'
 import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
 
 const router = useRouter()
