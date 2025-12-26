@@ -25,7 +25,7 @@
         <!-- 贡献者 -->
         <div
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="userInfo.avatar" class="w-5 h-5 rounded-full">
+          <img :src="userInfo.avatar || '/default-avatar.png'" class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">Admin</span>
         </div>
       </div>
@@ -243,151 +243,23 @@
       </div>
     </div>
   </div>
+
   <!-- 加载状态 -->
   <div v-else-if="isLoading" class="max-w-5xl mx-auto">
-    <!-- 工具信息骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
-      <div class="flex gap-8 items-start">
-        <!-- 左侧图标区域 -->
-        <div class="flex flex-col items-center gap-4 min-w-[120px]">
-          <div class="w-28 h-28 rounded-3xl bg-gray-200"></div>
-          <div class="flex gap-6">
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
-              <div class="h-3 w-8 bg-gray-200 rounded"></div>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
-              <div class="h-3 w-8 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-          <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
-        </div>
-
-        <!-- 右侧内容区域 -->
-        <div class="flex-1">
-          <!-- 标签骨架 -->
-          <div class="flex gap-3 mb-4">
-            <div class="w-16 h-6 bg-gray-200 rounded"></div>
-            <div class="w-12 h-6 bg-gray-200 rounded"></div>
-            <div class="w-20 h-6 bg-gray-200 rounded"></div>
-          </div>
-
-          <!-- 标题骨架 -->
-          <div class="h-8 bg-gray-300 rounded mb-4 max-w-md"></div>
-
-          <!-- 描述骨架 -->
-          <div class="space-y-2 mb-6">
-            <div class="h-4 bg-gray-200 rounded"></div>
-            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-            <div class="h-4 bg-gray-200 rounded w-4/6"></div>
-          </div>
-
-          <!-- 标签骨架 -->
-          <div class="flex items-center gap-4 mb-6">
-            <div class="w-8 h-4 bg-gray-200 rounded"></div>
-            <div class="flex gap-2">
-              <div class="w-16 h-6 bg-gray-200 rounded-full"></div>
-              <div class="w-12 h-6 bg-gray-200 rounded-full"></div>
-              <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
-            </div>
-          </div>
-
-          <!-- 按钮骨架 -->
-          <div class="w-32 h-10 bg-gray-300 rounded-lg"></div>
-          <div class="w-48 h-3 bg-gray-200 rounded mt-2"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 使用说明骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
-      <div class="flex items-center gap-2 mb-6">
-        <div class="w-5 h-5 bg-blue-200 rounded"></div>
-        <div class="h-6 w-24 bg-gray-300 rounded"></div>
-      </div>
-
-      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <div class="space-y-3">
-          <div class="h-4 bg-gray-200 rounded"></div>
-          <div class="h-4 bg-gray-200 rounded w-11/12"></div>
-          <div class="h-4 bg-gray-200 rounded w-10/12"></div>
-          <div class="h-4 bg-gray-200 rounded w-9/12"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 评论区域骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-pulse">
-      <div class="flex items-center gap-2 mb-6">
-        <div class="w-5 h-5 bg-gray-300 rounded"></div>
-        <div class="h-6 w-16 bg-gray-300 rounded"></div>
-        <div class="h-4 w-8 bg-gray-200 rounded"></div>
-      </div>
-
-      <!-- 排序和分页骨架 -->
-      <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-4">
-          <div class="h-4 w-16 bg-gray-200 rounded"></div>
-          <div class="w-32 h-8 bg-gray-200 rounded"></div>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-16 h-8 bg-gray-200 rounded"></div>
-          <div class="w-20 h-4 bg-gray-200 rounded"></div>
-          <div class="w-16 h-8 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-
-      <!-- 评论列表骨架 -->
-      <div class="space-y-6 mb-8">
-        <div v-for="i in 2" :key="i" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-gray-300"></div>
-              <div class="space-y-2">
-                <div class="h-4 w-24 bg-gray-300 rounded"></div>
-                <div class="h-3 w-16 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-6 bg-gray-200 rounded"></div>
-              <div class="w-6 h-6 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-          <div class="space-y-2 mt-4">
-            <div class="h-3 bg-gray-200 rounded w-full"></div>
-            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 发表评论骨架 -->
-      <div class="mt-8">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
-          <div class="flex-1">
-            <div class="w-full h-24 bg-gray-100 rounded-lg"></div>
-            <div class="flex justify-between items-center mt-3">
-              <div class="w-12 h-3 bg-gray-200 rounded"></div>
-              <div class="w-24 h-8 bg-gray-300 rounded-lg"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <tool-detail-skeleton />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
 import { HttpManager } from '@/api'
 import { storeToRefs } from 'pinia'
-import { predefinedTags } from '@/data/tool/tags'
-import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/tool/mockData'
+import { predefinedTags } from '@/data/tags'
+import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/mockData'
+import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -416,6 +288,8 @@ const pagination = ref({
   total: 0,
   totalPages: 0
 })
+// 3. 标记变量，用于组件卸载时取消异步操作
+const isComponentMounted = ref(true)
 
 // 二、计算属性
 // 2. 当前页显示的评论
@@ -544,20 +418,24 @@ const mockToggleToolCollection = async (resourceId, resourceType) => {
 // 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
   isLoading.value = true
+  toolsStore.setToolSubmitDisabled(true) // 禁用工具提交按钮（主要是组件过渡动画和组件创建相互冲突，导致工具提交页组件未被创建。onMounted使用异步函数是导火索）
+
   try {
     const data = await toolsStore.getToolDetail(id)
-    tool.value = data
+    if (!isComponentMounted.value) return // 检查组件是否已卸载
 
-    // 检查收藏状态
-    if (isAuthenticated.value) {
-      await checkCollectionStatus(id)
-    }
-    // 加载评论状态
-    await fetchComments(id)
+    tool.value = data
+    isLoading.value = false // 提前结束加载状态
+    toolsStore.setToolSubmitDisabled(false) // 启用工具提交按钮
+
+    // 非核心数据后台加载（不阻塞UI）
+    Promise.allSettled([
+      isAuthenticated.value ? checkCollectionStatus(id) : Promise.resolve(),
+      fetchComments(id)
+    ])
   } catch (error) {
-    ElMessage.error('加载工具详情失败')
-  } finally {
-    isLoading.value = false
+    if (!isComponentMounted.value) return
+    console.error('加载核心数据失败:', error)
   }
 }
 // 6. 获取评论
@@ -565,6 +443,8 @@ const fetchComments = async (toolId) => {
   loadingComments.value = true
   try {
     const response = await HttpManager.getToolComments(toolId)
+    if (!isComponentMounted.value) return // 检查组件是否已卸载
+
     if (response.code === 200 && response.data) {
       comments.value = response.data.map(comment => ({
         ...comment,
@@ -587,7 +467,9 @@ const fetchComments = async (toolId) => {
     }))
     updatePagination()
   } finally {
-    loadingComments.value = false
+    if (isComponentMounted.value) {
+      loadingComments.value = false
+    }
   }
 }
 // 7. 发表评论
@@ -698,7 +580,6 @@ const handleLikeComment = async (commentId) => {
     } else {
       throw new Error(response.message || '操作失败')
     }
-    throw new Error('操作失败')
   } catch (error) {
     // ElMessage.error(error.message || '操作失败')
 
@@ -785,14 +666,19 @@ const formatTime = (timeString) => {
 // 四、生命周期函数
 // 1. 组件加载时加载数据
 onMounted(async () => {
+  isComponentMounted.value = true
   const id = route.params.id
   await loadToolDetail(id)
+})
+// 2. 组件卸载时标记
+onUnmounted(() => {
+  isComponentMounted.value = false
 })
 </script>
 
 <style lang="scss" scoped>
 /* 样式保持不变 */
-@import '@/assets/css/index';
+@import '@/assets/css/index.css';
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;

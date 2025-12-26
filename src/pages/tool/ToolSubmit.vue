@@ -197,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useToolsStore } from '@/store/toolsStore'
 import { ElMessage } from 'element-plus'
 import { predefinedTags } from '@/data/tool/tags'
@@ -401,10 +401,19 @@ watch(() => form.category, (newCategory) => {
     })
   }
 })
+
+// 五、生命周期函数
+onMounted(async () => {
+  console.log('ToolSubmit 组件被创建')
+})
+
+onUnmounted(() => {
+  console.log('ToolSubmit 组件被销毁')
+})
 </script>
 
-<style lang="scss" scoped>
-@import '../../assets/css/index';
+<style scoped>
+@import '@/assets/css/index.css';
 
 /* ::-webkit-scrollbar {
   width: 4px;

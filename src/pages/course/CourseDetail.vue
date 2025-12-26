@@ -738,15 +738,8 @@ onMounted(async () => {
 })
 </script>
 
-<style lang="scss" scoped>
-/* 使用独立的课程样式文件 */
-@import '@/assets/css/courseIndex';
-
-/* 覆盖按钮样式 */
-.action-button {
-  &.secondary {
-    background: $course-gray-100;
-    color: $course-gray-700;
+<style scoped>
+@import '@/assets/css/index.css';
 
     &:hover {
       background: $course-gray-200;

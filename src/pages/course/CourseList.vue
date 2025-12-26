@@ -585,75 +585,9 @@ onUnmounted(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-/* 使用独立的课程样式文件 */
-@import '@/assets/css/courseIndex';
-
-/* 头像样式覆盖 */
-.course-avatar-container {
-  .course-avatar {
-    @extend .course-avatar;
-
-    &--authenticated-img {
-      @extend .course-avatar--authenticated-img;
-    }
-
-    &--authenticated-default {
-      @extend .course-avatar--authenticated-default;
-    }
-
-    &--guest {
-      @extend .course-avatar--guest;
-    }
-
-    &__online-status {
-      @extend .course-avatar__online-status;
-    }
-  }
-
-  .course-avatar-dropdown {
-    @extend .course-avatar-dropdown;
-
-    &__header {
-      @extend .course-avatar-dropdown__header;
-    }
-
-    &__item {
-      @extend .course-avatar-dropdown__item;
-    }
-
-    &__divider {
-      @extend .course-avatar-dropdown__divider;
-    }
-  }
-}
-
-/* 卡片样式使用课程模块的 */
-.course-card-container {
-  .course-card {
-    @include course-card-base;
-    padding: $course-spacing-lg;
-
-    .course-card__title {
-      font-size: $course-font-size-lg;
-      font-weight: 700;
-      color: $course-text-primary;
-      transition: color $course-transition;
-
-      &:hover {
-        color: $course-primary;
-      }
-    }
-
-    .course-card__stats {
-      display: flex;
-      align-items: center;
-      gap: $course-spacing-sm;
-      font-size: $course-font-size-xs;
-      color: $course-text-tertiary;
-      margin-top: $course-spacing-xs;
-    }
-  }
+<style scoped>
+/* 复用部分 ToolsList 的样式 */
+@import '@/assets/css/index.css';
 
   .course-tooltip {
     @extend .course-tooltip;

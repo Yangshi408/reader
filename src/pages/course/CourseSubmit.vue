@@ -346,9 +346,8 @@ const removeTag = (tagId) => {
   selectedTags.value = selectedTags.value.filter(id => id !== tagId)
 }
 
-const addChapter = () => {
-  syllabus.value.push({ title: '', duration: '' })
-}
+<style scoped>
+@import '@/assets/css/index.css';
 
 const removeChapter = (index) => {
   if (syllabus.value.length > 1) {

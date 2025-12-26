@@ -515,8 +515,8 @@ onUnmounted(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-@import '../../assets/css/index';
+<style scoped>
+@import '@/assets/css/index.css';
 
 .glass-header {
   background: rgba(255, 255, 255, 0.7);
