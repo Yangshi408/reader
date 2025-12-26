@@ -306,10 +306,9 @@ const currentEngineName = computed(() => {
 })
 
 const userInitial = computed(() => {
-  // 1. 游客显示 '游'
   if (!isAuthenticated.value) return '游'
-
-  // 2. 已登录（但没图片的情况）显示 '我'
+  if (userInfo.value?.nickname) return userInfo.value.nickname.charAt(0)
+  if (userInfo.value?.username) return userInfo.value.username.charAt(0)
   return '我'
 })
 

@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-8 relative min-h-screen pb-20">
-    <header
-      class="flex justify-between items-center sticky top-0 z-40 py-4 glass-header rounded-2xl px-6 mb-8 transition-all duration-300"
-    >
+    <!-- 顶部导航栏 -->
+    <header class="flex justify-between items-center sticky top-0 z-40 py-4 glass-header rounded-2xl px-6 mb-8">
+      <!-- 主页按钮 -->
       <div>
         <router-link
           to="/home"
@@ -12,93 +12,185 @@
         </router-link>
       </div>
 
-      <div class="relative w-full max-w-xl group mx-4">
-        <input
-          v-model="searchKeyword"
-          type="text"
-          placeholder="搜索课程名称、教师..."
-          class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md"
-        />
-        <div class="absolute right-4 top-1/2 -translate-y-1/2">
-          <i class="fas fa-search text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+      <!-- 中间：搜索栏 -->
+      <div class="relative w-full max-w-2xl group mx-4">
+        <div class="search-bar-container">
+          <!-- 搜索引擎选择器（课程页面固定为"本站"） -->
+          <div class="engine-wrapper">
+            <div class="engine-trigger cursor-default">
+              <span>课程</span>
+            </div>
+          </div>
+
+          <!-- 输入框 -->
+          <input
+            v-model="searchKeyword"
+            @keydown.enter="handleSearch"
+            @input="handleInputChange"
+            type="text"
+            placeholder="搜索课程名称、教师..."
+            class="search-input-field"
+          />
+
+          <!-- 右侧图标区域 -->
+          <div class="search-action">
+            <i v-if="!isSearching" class="fas fa-search text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+            <i v-else class="fas fa-spinner fa-spin text-blue-500"></i>
+          </div>
+        </div>
+
+        <!-- 搜索成功后的提示框 -->
+        <div
+          v-if="hasSearched && !isSearching"
+          class="absolute top-16 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm animate-slide-down z-10"
+        >
+          <i class="fas fa-info-circle mr-2"></i>
+          "{{ searchKeyword }}" 的搜索结果如下：
+          <span class="ml-2 text-xs text-blue-400 cursor-pointer hover:underline" @click="clearSearch">
+            清除搜索
+          </span>
+        </div>
+
+        <!-- 搜索时的加载动画 -->
+        <div
+          v-if="isSearching"
+          class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 animate-fade-in"
+        >
+          <div class="flex flex-col items-center justify-center">
+            <div class="flex items-center justify-center space-x-1 mb-3">
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.1s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.3s"></div>
+              <div class="w-2 h-2 bg-blue-500 rounded-full animate-wave" style="animation-delay: 0.4s"></div>
+            </div>
+            <p class="text-sm text-gray-600 font-medium">正在搜索 "{{ searchKeyword }}"...</p>
+          </div>
         </div>
       </div>
 
+      <!-- 用户菜单 -->
       <div class="flex items-center gap-6">
-        <div class="relative" ref="avatarRef">
-          <div
-            v-if="isAuthenticated"
-            @click="showUserMenu = !showUserMenu"
-            class="cursor-pointer relative"
+        <!-- 类型筛选按钮 -->
+        <div class="relative" ref="filterRef">
+          <button
+            @click="showFilter = !showFilter"
+            class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
           >
-            <img
-              :src="userInfo.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'"
-              class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover"
-              alt="Avatar"
-            />
-            <div
-              class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-            ></div>
-          </div>
-
-          <button v-else @click="goToLogin" class="btn-primary-outline text-sm">
-            登录
+            <i class="fas fa-sliders-h"></i> 筛选
           </button>
 
-          <transition
-            enter-active-class="transition ease-out duration-100"
-            enter-from-class="transform opacity-0 scale-95"
-            enter-to-class="transform opacity-100 scale-100"
-            leave-active-class="transition ease-in duration-75"
-            leave-from-class="transform opacity-100 scale-100"
-            leave-to-class="transform opacity-0 scale-95"
+          <!-- 筛选下拉菜单 -->
+          <div
+            v-if="showFilter"
+            class="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in"
           >
-            <div
-              v-if="showUserMenu && isAuthenticated"
-              class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 origin-top-right"
+            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">课程类型</h4>
+            <div class="space-y-1">
+              <button
+                v-for="type in courseTypes"
+                :key="type"
+                @click="selectCourseType(type)"
+                :class="[
+                  'w-full px-3 py-2 rounded-md text-sm text-left transition-all duration-200',
+                  activeType === type
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                ]"
+              >
+                {{ type }}
+                <i v-if="activeType === type" class="fas fa-check float-right mt-0.5"></i>
+              </button>
+            </div>
+            <div class="h-px bg-gray-100 my-3"></div>
+            <button
+              @click="resetFilter"
+              class="w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
             >
+              <i class="fas fa-redo mr-2"></i>重置筛选
+            </button>
+          </div>
+        </div>
+
+        <!-- 用户头像菜单（已修改为渐变背景） -->
+        <div class="relative" ref="avatarRef">
+          <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
+            <template v-if="isAuthenticated && userInfo?.avatar">
+              <!-- 已登录且有头像 -->
+              <img
+                :src="userInfo.avatar"
+                class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
+                alt="User Avatar"
+              />
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
+
+            <template v-else-if="isAuthenticated">
+              <!-- 已登录但无头像，显示渐变背景和用户首字母 -->
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
+                {{ userInitial }}
+              </div>
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
+
+            <template v-else>
+              <!-- 未登录，显示游客渐变背景 -->
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
+                {{ userInitial }}
+              </div>
+            </template>
+          </div>
+
+          <!-- 下拉菜单 -->
+          <div
+            v-if="showUserMenu"
+            class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden"
+          >
+            <template v-if="isAuthenticated">
+              <div class="px-4 py-3 border-b border-gray-50">
+                <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
+                <p class="text-xs text-gray-400 truncate">已登录</p>
+              </div>
               <router-link
                 to="/profile"
-                class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
               >
-                <i class="fas fa-user mr-2"></i>个人中心
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
               </router-link>
               <a
                 href="#"
-                class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
               >
-                <i class="fas fa-key mr-2"></i>修改密码
+                <i class="fas fa-key mr-2 text-blue-500"></i>修改密码
               </a>
               <div class="h-px bg-gray-100 my-1"></div>
               <p
                 @click="handleLogout"
-                class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"
+                class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors"
               >
                 <i class="fas fa-sign-out-alt mr-2"></i>退出登录
               </p>
-            </div>
-          </transition>
+            </template>
+
+            <template v-else>
+              <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
+                当前身份：游客
+              </div>
+              <router-link
+                to="/profile"
+                class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              >
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+              </router-link>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <div @click="goToLogin" class="block px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium cursor-pointer transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>返回登录
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </header>
-
-    <div class="flex justify-center mb-8">
-      <div class="flex flex-wrap gap-2 bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-white/60 shadow-sm">
-        <button
-          v-for="type in courseTypes"
-          :key="type"
-          @click="activeType = type"
-          class="px-5 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
-          :class="
-            activeType === type
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
-              : 'text-gray-600 hover:bg-white hover:text-blue-600'
-          "
-        >
-          {{ type }}
-        </button>
-      </div>
-    </div>
 
     <div class="space-y-16">
       <div
@@ -204,7 +296,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-// 引入 Tools Store 以复用用户状态
 import { useToolsStore } from '@/store/toolsStore'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
@@ -214,14 +305,30 @@ const route = useRoute()
 const toolsStore = useToolsStore()
 const { userInfo, isAuthenticated } = storeToRefs(toolsStore)
 
-// 1. 筛选状态
+const userInitial = computed(() => {
+  if (!isAuthenticated.value) return '游'
+  if (userInfo.value?.nickname) return userInfo.value.nickname.charAt(0)
+  if (userInfo.value?.username) return userInfo.value.username.charAt(0)
+  return '我'
+})
+
+// 搜索相关状态
 const searchKeyword = ref('')
+const hasSearched = ref(false)
+const isSearching = ref(false)
+const searchTimeout = ref(null)
+
+// 筛选状态
 const activeType = ref('全部')
-const courseTypes = ['全部', '公必', '专必', '专选', '公选']
+const showFilter = ref(false)
 const showUserMenu = ref(false)
+const courseTypes = ['全部', '公必', '专必', '专选', '公选']
+
+// 筛选相关的refs
+const filterRef = ref(null)
 const avatarRef = ref(null)
 
-// 2. 颜色配置
+// 颜色配置（保持不变）
 const colorMap = {
   公必: {
     bar: '#a855f7',
@@ -260,7 +367,7 @@ const getColorConfig = (type) => {
   )
 }
 
-// 3. Mock 数据
+// Mock 数据（保持不变）
 const semesterMap = {
   '1-1': '大一上',
   '1-2': '大一下',
@@ -510,10 +617,48 @@ const groupedCourses = computed(() => {
   return groups
 })
 
-// 5. 交互逻辑
-const resetFilter = () => {
+// 搜索处理函数
+const handleSearch = () => {
+  if (searchKeyword.value.trim()) {
+    hasSearched.value = true
+    // 触发搜索逻辑
+    performSearch()
+  }
+}
+
+const handleInputChange = () => {
+  if (searchKeyword.value.trim()) {
+    // 防抖搜索
+    clearTimeout(searchTimeout.value)
+    isSearching.value = true
+
+    searchTimeout.value = setTimeout(() => {
+      hasSearched.value = true
+      isSearching.value = false
+      // 这里可以添加实际的搜索逻辑
+    }, 500)
+  } else {
+    hasSearched.value = false
+    isSearching.value = false
+  }
+}
+
+const clearSearch = () => {
   searchKeyword.value = ''
+  hasSearched.value = false
+  isSearching.value = false
+}
+
+const selectCourseType = (type) => {
+  activeType.value = type
+  showFilter.value = false
+}
+
+const resetFilter = () => {
   activeType.value = '全部'
+  searchKeyword.value = ''
+  hasSearched.value = false
+  showFilter.value = false
 }
 
 const goToDetail = (courseId) => {
@@ -536,9 +681,8 @@ const handleLogout = async () => {
 }
 
 const closeDropdowns = (e) => {
-  if (avatarRef.value && !avatarRef.value.contains(e.target)) {
-    showUserMenu.value = false
-  }
+  if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
+  if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
 }
 
 // 滚动控制逻辑
@@ -581,7 +725,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-/* 复用部分 ToolsList 的样式 */
 @import '@/assets/css/index';
 
 .glass-header {
@@ -591,20 +734,135 @@ onUnmounted(() => {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
-.btn-primary-outline {
-  padding: 0.5rem 1.5rem;
-  border: 1px solid #0066ff;
-  color: #0066ff;
-  border-radius: 999px;
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  background: white;
+  border-radius: 99px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  padding-right: 16px;
+}
+
+.group:hover .search-bar-container,
+.search-bar-container:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.engine-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #f3f4f6;
+  padding: 0 16px;
+  margin-right: 8px;
+}
+
+.engine-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
-  transition: all 0.3s;
+  color: #4b5563;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.2s;
 }
 
-.btn-primary-outline:hover {
-  background: #0066ff;
-  color: white;
+.engine-trigger:hover {
+  color: #3b82f6;
 }
 
+.search-input-field {
+  flex: 1;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #1f2937;
+  width: 100%;
+}
+
+.search-input-field::placeholder {
+  color: #9ca3af;
+}
+
+.search-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+/* 动画效果 */
+.animate-pop-in {
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-wave {
+  animation: wave 1.5s ease-in-out infinite;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 保持原有的其他样式 */
 .scroll-target {
   scroll-margin-top: 140px;
 }
