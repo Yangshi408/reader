@@ -297,6 +297,8 @@ const currentEngineName = computed(() => {
 
 const userInitial = computed(() => {
   if (!isAuthenticated.value) return '游'
+  if (userInfo.value?.nickname) return userInfo.value.nickname.charAt(0)
+  if (userInfo.value?.username) return userInfo.value.username.charAt(0)
   return '我'
 })
 

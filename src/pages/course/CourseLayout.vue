@@ -20,14 +20,14 @@
           :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
                    isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
                    route.name === 'tools' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
-          <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
-          <span v-if="!isCollapsed" class="ml-3 truncate">效率工具</span>
+          <i class="fas fa-layer-group group-hover:rotate-12 transition-transform"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">工具资源</span>
         </router-link>
 
         <div class="nav-group">
           <div :class="['flex items-center rounded-xl bg-blue-50 text-blue-600 font-bold cursor-default group', isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3']">
-            <i class="fas fa-layer-group group-hover:rotate-12 transition-transform"></i>
-            <span v-if="!isCollapsed" class="ml-3 truncate">课程浏览</span>
+            <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
+            <span v-if="!isCollapsed" class="ml-3 truncate">课程路线</span>
           </div>
 
           <div v-if="!isCollapsed" class="ml-10 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
@@ -40,7 +40,7 @@
           </div>
         </div>
 
-        <router-link to="/showcase"
+        <router-link to="/projects"
           :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
                    isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
                    route.name === 'showcase' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">

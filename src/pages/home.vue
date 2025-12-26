@@ -178,7 +178,6 @@
           <div class="section-container">
             <div class="section-header">
               <h2 class="section-title-text">常用</h2>
-              <a href="#" class="more-btn-small">更多 →</a>
             </div>
             <section id="common" class="section-card">
               <div class="grid-layout">
