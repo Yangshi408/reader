@@ -256,7 +256,7 @@
           <div class="section-container">
             <div class="section-header">
               <h2 class="section-title-text">项目情况</h2>
-              <a href="#" class="more-btn-small">更多 →</a>
+              <a href="/projects" class="more-btn-small">更多 →</a>
             </div>
             <section id="projects" class="section-card">
               <div class="grid-layout">

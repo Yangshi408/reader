@@ -1,548 +1,533 @@
 <template>
-  <div class="space-y-8 relative">
-    <header class="flex justify-between items-center sticky top-0 z-40 py-4 course-glass-header rounded-2xl px-6 mb-8">
-      <!-- 主页按钮 -->
+  <div class="space-y-8 relative min-h-screen pb-20">
+    <header
+      class="flex justify-between items-center sticky top-0 z-40 py-4 glass-header rounded-2xl px-6 mb-8 transition-all duration-300"
+    >
       <div>
-        <router-link to="/home" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+        <router-link
+          to="/home"
+          class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+        >
           <i class="fas fa-home"></i> 主页
         </router-link>
       </div>
 
-      <!-- 中间：搜索栏 -->
-      <div class="relative w-full max-w-2xl group">
-        <div class="course-search-bar">
-          <!-- 1. 自定义搜索引擎选择器 -->
-          <div class="course-search-bar__filter" ref="engineRef">
-            <div class="course-search-bar__filter-trigger" @click.stop="engineMenuOpen = !engineMenuOpen">
-              <span>{{ currentEngineName }}</span>
-              <i :class="['fas fa-chevron-down', { 'rotate': engineMenuOpen }]" class="transition-transform duration-200"></i>
-            </div>
-
-            <!-- 下拉菜单 -->
-            <div v-if="engineMenuOpen" class="course-search-bar__filter-dropdown">
-              <div
-                v-for="e in engines"
-                :key="e.value"
-                class="course-search-bar__filter-option"
-                :class="{ 'selected': searchEngine === e.value }"
-                @click.stop="selectEngine(e.value)"
-              >
-                {{ e.name }}
-                <i v-if="searchEngine === e.value" class="fas fa-check"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. 输入框 -->
-          <input
-            v-model="searchInput"
-            @keydown.enter="handleSearch"
-            @input="handleInputChange"
-            type="text"
-            placeholder="搜索感兴趣的课程..."
-            class="course-search-bar__input"
-          >
-
-          <!-- 3. 右侧图标区域 (搜索/加载) -->
-          <div class="course-search-bar__action">
-            <i v-if="!isSearching" @click="handleSearch" class="fas fa-search hover:text-blue-500 cursor-pointer transition-colors"></i>
-            <i v-else class="fas fa-spinner fa-spin text-blue-500"></i>
-          </div>
-        </div>
-
-        <!-- 搜索成功后的提示框 -->
-        <div v-if="hasSearched && !isSearching && searchEngine === 'local'"
-             class="absolute top-16 left-0 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm shadow-sm course-animate--slide-down z-10">
-          <i class="fas fa-info-circle mr-2"></i>
-          "{{ searchInput }}" 的搜索结果如下：
-          <span class="ml-2 text-xs text-blue-400 cursor-pointer hover:underline" @click="clearSearch">清除搜索</span>
-        </div>
-
-        <!-- 搜索时的加载动画 -->
-        <div v-if="isSearching && searchEngine === 'local'"
-             class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 p-4 z-20 course-animate--fade-in">
-          <div class="flex flex-col items-center justify-center">
-            <div class="flex items-center justify-center space-x-1 mb-3">
-              <div class="w-2 h-2 bg-blue-500 rounded-full course-animate--wave" style="animation-delay: 0s"></div>
-              <div class="w-2 h-2 bg-blue-500 rounded-full course-animate--wave" style="animation-delay: 0.1s"></div>
-              <div class="w-2 h-2 bg-blue-500 rounded-full course-animate--wave" style="animation-delay: 0.2s"></div>
-              <div class="w-2 h-2 bg-blue-500 rounded-full course-animate--wave" style="animation-delay: 0.3s"></div>
-              <div class="w-2 h-2 bg-blue-500 rounded-full course-animate--wave" style="animation-delay: 0.4s"></div>
-            </div>
-            <p class="text-sm text-gray-600 font-medium">正在搜索 "{{ searchInput }}"...</p>
-          </div>
+      <div class="relative w-full max-w-xl group mx-4">
+        <input
+          v-model="searchKeyword"
+          type="text"
+          placeholder="搜索课程名称、教师..."
+          class="w-full h-12 pl-4 pr-12 rounded-full bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm group-hover:shadow-md"
+        />
+        <div class="absolute right-4 top-1/2 -translate-y-1/2">
+          <i class="fas fa-search text-gray-400 group-hover:text-blue-500 transition-colors"></i>
         </div>
       </div>
 
-      <!-- 筛选和用户菜单 -->
       <div class="flex items-center gap-6">
-        <div class="relative" ref="filterRef">
-          <button @click="showFilter = !showFilter"
-                  class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
-            <i class="fas fa-sliders-h"></i> 筛选
-          </button>
-          <div v-if="showFilter" class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 course-animate--pop-in max-h-[70vh] overflow-y-auto">
-            <!-- 排序 -->
-            <div class="mb-4">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
-              <div class="flex gap-2">
-                <button v-for="sort in ['最新', '最热', '评分最高']" :key="sort" @click="coursesStore.toggleSort(sort)"
-                        :class="['px-3 py-1 rounded-md text-sm border', activeFilters.sort === sort ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-200']">
-                  {{ sort }}
-                </button>
-              </div>
-            </div>
-
-            <!-- 难度等级 -->
-            <div class="mb-4">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">难度等级</h4>
-              <div class="flex flex-wrap gap-2">
-                <button v-for="level in ['入门', '初级', '中级', '高级']" :key="level" @click="coursesStore.toggleLevel(level)"
-                        :class="['px-3 py-1 rounded-md text-sm border', activeFilters.levels.includes(level) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200']">
-                  {{ level }}
-                </button>
-              </div>
-            </div>
-
-            <!-- 学期分类 -->
-            <div class="mb-4">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">学期分类</h4>
-              <div class="flex flex-wrap gap-2">
-                <button v-for="semester in semesterCategories" :key="semester" @click="coursesStore.toggleCategory(semester)"
-                        :class="['px-3 py-1 rounded-md text-sm border', activeFilters.categories.includes(semester) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200']">
-                  {{ semester }}
-                </button>
-              </div>
-            </div>
-
-            <!-- 课程类型 -->
-            <div class="mb-4">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">课程类型</h4>
-              <div class="flex flex-wrap gap-2">
-                <button v-for="type in ['视频课程', '图文教程', '直播课', '专栏']" :key="type" @click="coursesStore.toggleType(type)"
-                        :class="['px-3 py-1 rounded-md text-sm border', activeFilters.types.includes(type) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'text-gray-600 border-gray-200']">
-                  {{ type }}
-                </button>
-              </div>
-            </div>
-
-            <!-- 标签 -->
-            <div class="mb-4">
-              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                标签筛选 (多选)
-                <button
-                  @click="clearTagFilters"
-                  v-if="activeFilters.tags.length > 0"
-                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                >
-                  清除
-                </button>
-              </h4>
-
-              <div class="course-tag-selector__search mb-3">
-                <i class="fas fa-search text-xs"></i>
-                <input
-                  v-model="tagFilterSearch"
-                  type="text"
-                  placeholder="搜索标签..."
-                  class="text-sm"
-                />
-              </div>
-
-              <div class="course-tag-selector__container">
-                <div class="course-tag-selector__container-content">
-                  <div class="course-tag-selector__tags">
-                    <div
-                      v-for="tag in filteredTags"
-                      :key="tag.id"
-                      @click="coursesStore.toggleTag(tag.id)"
-                      :class="[
-                        'course-tag-selector__tag',
-                        activeFilters.tags.includes(tag.id)
-                          ? 'course-tag-selector__tag--selected'
-                          : 'course-tag-selector__tag--unselected'
-                      ]"
-                    >
-                      <span>{{ tag.name }}</span>
-                      <i
-                        v-if="activeFilters.tags.includes(tag.id)"
-                        class="fas fa-check text-xs"
-                      ></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 用户菜单 - 与ProjectList相同的头像逻辑 -->
         <div class="relative" ref="avatarRef">
-          <div @click="showUserMenu = !showUserMenu" class="course-avatar-container">
-            <template v-if="isAuthenticated && userInfo?.avatar">
-              <img
-                :src="userInfo.avatar"
-                class="course-avatar course-avatar--authenticated-img"
-                alt="用户头像"
-              />
-              <div class="course-avatar__online-status"></div>
-            </template>
-
-            <template v-else-if="isAuthenticated">
-              <div class="course-avatar course-avatar--authenticated-default">
-                {{ userInitial }}
-              </div>
-              <div class="course-avatar__online-status"></div>
-            </template>
-
-            <template v-else>
-              <div class="course-avatar course-avatar--guest">
-                {{ userInitial }}
-              </div>
-            </template>
+          <div
+            v-if="isAuthenticated"
+            @click="showUserMenu = !showUserMenu"
+            class="cursor-pointer relative"
+          >
+            <img
+              :src="userInfo.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'"
+              class="w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform object-cover"
+              alt="Avatar"
+            />
+            <div
+              class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
+            ></div>
           </div>
 
-          <!-- 下拉菜单 -->
-          <div v-if="showUserMenu"
-               class="course-avatar-dropdown course-animate--pop-in">
+          <button v-else @click="goToLogin" class="btn-primary-outline text-sm">
+            登录
+          </button>
 
-            <template v-if="isAuthenticated">
-              <div class="course-avatar-dropdown__header">
-                <p>{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
-                <p>已登录</p>
-              </div>
-              <router-link to="/profile" class="course-avatar-dropdown__item">
-                <i class="fas fa-user"></i>个人中心
+          <transition
+            enter-active-class="transition ease-out duration-100"
+            enter-from-class="transform opacity-0 scale-95"
+            enter-to-class="transform opacity-100 scale-100"
+            leave-active-class="transition ease-in duration-75"
+            leave-from-class="transform opacity-100 scale-100"
+            leave-to-class="transform opacity-0 scale-95"
+          >
+            <div
+              v-if="showUserMenu && isAuthenticated"
+              class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 origin-top-right"
+            >
+              <router-link
+                to="/profile"
+                class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+              >
+                <i class="fas fa-user mr-2"></i>个人中心
               </router-link>
-              <div class="course-avatar-dropdown__divider"></div>
-              <div @click="handleLogout" class="course-avatar-dropdown__item logout">
-                <i class="fas fa-sign-out-alt"></i>退出登录
-              </div>
-            </template>
-
-            <template v-else>
-              <div class="course-avatar-dropdown__header">
-                <p>游客</p>
-                <p>当前身份：游客</p>
-              </div>
-              <router-link to="/profile" class="course-avatar-dropdown__item">
-                <i class="fas fa-user"></i>个人中心
-              </router-link>
-              <div class="course-avatar-dropdown__divider"></div>
-              <div @click="goToLogin" class="course-avatar-dropdown__item login">
-                <i class="fas fa-sign-in-alt"></i>返回登录
-              </div>
-            </template>
-          </div>
+              <a
+                href="#"
+                class="block px-4 py-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+              >
+                <i class="fas fa-key mr-2"></i>修改密码
+              </a>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <p
+                @click="handleLogout"
+                class="cursor-pointer px-4 py-2 text-red-500 hover:bg-red-50"
+              >
+                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+              </p>
+            </div>
+          </transition>
         </div>
       </div>
     </header>
 
-    <div v-if="!coursesList.length" class="text-center py-20 text-gray-400">
-      <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-      <p>课程加载中...</p>
+    <div class="flex justify-center mb-8">
+      <div class="flex flex-wrap gap-2 bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-white/60 shadow-sm">
+        <button
+          v-for="type in courseTypes"
+          :key="type"
+          @click="activeType = type"
+          class="px-5 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
+          :class="
+            activeType === type
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+              : 'text-gray-600 hover:bg-white hover:text-blue-600'
+          "
+        >
+          {{ type }}
+        </button>
+      </div>
     </div>
-    <div v-else class="space-y-12 pb-20">
-      <section v-for="semester in filteredSemesters" :key="semester" :id="`section-${semester}`" class="course-scroll-mt-32">
+
+    <div class="space-y-16">
+      <div
+        v-for="(group, semesterKey) in groupedCourses"
+        :key="semesterKey"
+        :id="`section-${semesterKey}`"
+        class="relative scroll-target"
+      >
         <div class="flex items-center gap-3 mb-6">
           <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
-          <h2 class="text-xl font-bold text-gray-800">{{ semester }}</h2>
-          <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            {{ getCoursesBySemester(semester).length }}
+          <h2 class="text-xl font-bold text-gray-800 tracking-tight">
+            {{ semesterMap[semesterKey] }}
+          </h2>
+          <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
+            {{ group.length }} 门课程
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div v-for="course in getCoursesBySemester(semester)" :key="course.id" class="course-card-container relative"
-               @mouseenter="handleMouseEnter(course.id)" @mouseleave="handleMouseLeave(course.id)">
-
-            <!-- 课程卡片 - 使用course-card样式 -->
+        <div
+          v-if="group.length > 0"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          <div
+            v-for="course in group"
+            :key="course.id"
+            @click="goToDetail(course.id)"
+            class="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
+          >
             <div
-              class="course-card group"
-              @click="goToDetail(course.id)">
+              class="absolute top-0 left-0 w-full h-1.5"
+              :style="{ backgroundColor: getColorConfig(course.type).bar }"
+            ></div>
 
-              <!-- 课程封面 -->
-              <div class="relative h-40 mb-4 rounded-xl overflow-hidden">
-                <img :src="course.cover" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span :class="[
-                    'px-2 py-1 rounded text-xs font-bold text-white',
-                    course.level === '入门' ? 'bg-blue-500' :
-                    course.level === '初级' ? 'bg-blue-600' :
-                    course.level === '中级' ? 'bg-blue-700' : 'bg-blue-800'
-                  ]">
-                    {{ course.level }}
-                  </span>
-                </div>
-                <div class="absolute bottom-3 right-3">
-                  <span class="px-2 py-1 rounded text-xs font-bold bg-black/60 text-white">
-                    {{ course.duration }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 课程信息 -->
-              <div class="mb-3">
-                <h3 class="course-card__title">{{ course.name }}</h3>
-                <p class="course-line-clamp-2 text-sm text-gray-500 leading-relaxed h-10 mt-2">
-                  {{ course.description }}
-                </p>
-              </div>
-
-              <!-- 讲师信息 -->
-              <div class="flex items-center justify-between text-sm text-gray-500">
-                <div class="flex items-center gap-2">
-                  <img :src="course.teacherAvatar" class="w-6 h-6 rounded-full">
-                  <span>{{ course.teacherName }}</span>
-                </div>
-                <div class="flex items-center gap-1 text-yellow-500">
-                  <i class="fas fa-star"></i>
-                  <span>{{ course.rating }}</span>
-                </div>
-              </div>
-
-              <!-- 课程数据 -->
-              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                <div class="course-card__stats">
-                  <span class="flex items-center gap-1">
-                    <i class="fas fa-users"></i>
-                    {{ course.students }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <i class="far fa-eye"></i>
-                    {{ course.views }}
-                  </span>
-                </div>
-                <div class="text-blue-600 font-bold">
-                  {{ course.isFree ? '免费' : `¥${course.price}` }}
-                </div>
-              </div>
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="text-[10px] px-2 py-0.5 rounded-md font-bold border"
+                :style="{
+                  color: getColorConfig(course.type).text,
+                  backgroundColor: getColorConfig(course.type).bg,
+                  borderColor: getColorConfig(course.type).border
+                }"
+              >
+                {{ course.type }}
+              </span>
+              <span class="text-xs text-gray-400 font-mono">{{ course.code }}</span>
             </div>
 
-            <!-- 提示框 -->
-            <div v-if="activeCourseId === course.id" class="course-tooltip course-animate--pop-in">
-              <div class="absolute -top-1 left-8 w-2 h-2 bg-gray-800 rotate-45"></div>
-              {{ course.fullDescription || course.description }}
+            <h3
+              class="font-bold text-gray-800 text-lg mb-3 line-clamp-1 group-hover:text-blue-600 transition-colors"
+              :title="course.name"
+            >
+              {{ course.name }}
+            </h3>
+
+            <div class="flex items-center text-sm text-gray-500 mb-5 gap-3">
+              <div class="flex items-center gap-1.5">
+                <i class="fas fa-chalkboard-teacher text-gray-300"></i>
+                <span>{{ course.teacher }}</span>
+              </div>
+              <div class="w-1 h-1 bg-gray-300 rounded-full"></div>
+              <span>{{ course.credit }} 学分</span>
+            </div>
+
+            <div
+              class="pt-4 border-t border-gray-50 flex items-center justify-between text-xs text-gray-400"
+            >
+              <div class="flex gap-4">
+                <span class="flex items-center gap-1 hover:text-blue-500">
+                  <i class="far fa-file-alt"></i> {{ course.resources }} 资料
+                </span>
+                <span class="flex items-center gap-1 hover:text-red-500">
+                  <i class="far fa-star"></i> {{ course.likes }}
+                </span>
+              </div>
+              <i
+                class="fas fa-arrow-right opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-500"
+              ></i>
             </div>
           </div>
         </div>
-      </section>
+
+        <div
+          v-else
+          class="h-24 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-sm"
+        >
+          本学期暂无相关课程
+        </div>
+      </div>
+
+      <div
+        v-if="Object.values(groupedCourses).every((g) => g.length === 0)"
+        class="text-center py-20"
+      >
+        <div class="text-gray-400 mb-4">没有找到匹配的课程</div>
+        <button @click="resetFilter" class="text-blue-600 text-sm hover:underline">
+          清除筛选条件
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useCoursesStore } from '@/store/courseStore'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+// 引入 Tools Store 以复用用户状态
+import { useToolsStore } from '@/store/toolsStore'
 import { storeToRefs } from 'pinia'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
-const coursesStore = useCoursesStore()
+const toolsStore = useToolsStore()
+const { userInfo, isAuthenticated } = storeToRefs(toolsStore)
 
-const {
-  coursesList,
-  userInfo,
-  activeFilters,
-  searchResults,
-  isAuthenticated,
-  tags
-} = storeToRefs(coursesStore)
-
-// 搜索引擎配置
-const engines = [
-  { name: '本站', value: 'local' },
-  { name: '慕课网', value: 'https://www.imooc.com/search/?words=' },
-  { name: '网易云课堂', value: 'https://study.163.com/courses?keyword=' },
-  { name: 'B站', value: 'https://search.bilibili.com/all?keyword=' }
-]
-const searchEngine = ref('local')
-const engineMenuOpen = ref(false)
-
-const currentEngineName = computed(() => {
-  const engine = engines.find(e => e.value === searchEngine.value)
-  return engine ? engine.name : '本站'
-})
-
-const userInitial = computed(() => {
-  if (!isAuthenticated.value) return '游'
-  return userInfo.value?.nickname?.charAt(0) ||
-    userInfo.value?.username?.charAt(0) ||
-    '我'
-})
-
-// 学期分类
-const semesterCategories = [
-  '大一上', '大一下',
-  '大二上', '大二下',
-  '大三上', '大三下',
-  '大四上', '大四下'
-]
-
-// 变量声明
-const searchInput = ref('')
-const hasSearched = ref(false)
-const isSearching = ref(false)
-const showFilter = ref(false)
+// 1. 筛选状态
+const searchKeyword = ref('')
+const activeType = ref('全部')
+const courseTypes = ['全部', '公必', '专必', '专选', '公选']
 const showUserMenu = ref(false)
-const activeCourseId = ref(null)
-const engineRef = ref(null)
-const tooltipTimers = ref({})
-const tagFilterSearch = ref('')
-const filterRef = ref(null)
 const avatarRef = ref(null)
-const TOOLTIP_DELAY = 500
 
-// 计算属性
-const filteredTags = computed(() => {
-  const searchTerm = tagFilterSearch.value.toLowerCase()
-  const tagList = tags.value || []
-  if (searchTerm) {
-    return tagList.filter(tag =>
-      tag.name.toLowerCase().includes(searchTerm) ||
-      tag.id.toLowerCase().includes(searchTerm)
-    )
-  }
-  return tagList.slice(0, 20)
-})
-
-const filteredSemesters = computed(() => {
-  if (hasSearched.value && searchResults.value.length > 0) {
-    const semesters = [...new Set(searchResults.value.map(c => c.semester || c.category))]
-    return semesterCategories.filter(semester => semesters.includes(semester))
-  }
-
-  // 如果没有搜索，显示所有有课程的学期
-  const semestersWithCourses = [...new Set(coursesList.value.map(c => c.semester || c.category))]
-  return semesterCategories.filter(semester => semestersWithCourses.includes(semester))
-})
-
-// 方法
-const selectEngine = (value) => {
-  searchEngine.value = value
-  engineMenuOpen.value = false
-}
-
-const handleMouseEnter = (courseId) => {
-  if (tooltipTimers.value[courseId]) {
-    clearTimeout(tooltipTimers.value[courseId])
-  }
-  tooltipTimers.value[courseId] = setTimeout(() => {
-    activeCourseId.value = courseId
-  }, TOOLTIP_DELAY)
-}
-
-const handleMouseLeave = (courseId) => {
-  if (tooltipTimers.value[courseId]) {
-    clearTimeout(tooltipTimers.value[courseId])
-    tooltipTimers.value[courseId] = null
-  }
-  activeCourseId.value = null
-}
-
-const handleSearch = async () => {
-  const query = searchInput.value.trim()
-  if (!query) return
-
-  if (searchEngine.value !== 'local') {
-    window.open(searchEngine.value + encodeURIComponent(query), '_blank')
-    searchInput.value = ''
-    return
-  }
-
-  isSearching.value = true
-  try {
-    await coursesStore.searchCourses(query)
-    hasSearched.value = true
-  } catch (error) {
-    ElMessage.error('搜索失败')
-  } finally {
-    isSearching.value = false
+// 2. 颜色配置
+const colorMap = {
+  公必: {
+    bar: '#a855f7',
+    text: '#9333ea',
+    bg: '#f3e8ff',
+    border: '#e9d5ff'
+  },
+  专必: {
+    bar: '#3b82f6',
+    text: '#2563eb',
+    bg: '#dbeafe',
+    border: '#bfdbfe'
+  },
+  专选: {
+    bar: '#14b8a6',
+    text: '#0d9488',
+    bg: '#ccfbf1',
+    border: '#99f6e4'
+  },
+  公选: {
+    bar: '#f97316',
+    text: '#ea580c',
+    bg: '#ffedd5',
+    border: '#fed7aa'
   }
 }
 
-const handleInputChange = () => {
-  if (searchEngine.value === 'local') {
-    hasSearched.value = false
-  }
-}
-
-const clearSearch = () => {
-  searchInput.value = ''
-  hasSearched.value = false
-  searchResults.value = []
-}
-
-const clearTagFilters = () => {
-  activeFilters.value.tags = []
-}
-
-const getCoursesBySemester = (semester) => {
-  let list = []
-  if (hasSearched.value) {
-    if (searchResults.value.length > 0) {
-      list = searchResults.value?.filter(c => (c.semester || c.category) === semester)
-      return filterCourseList(list)
-    } else {
-      return list
+const getColorConfig = (type) => {
+  return (
+    colorMap[type] || {
+      bar: '#9ca3af',
+      text: '#6b7280',
+      bg: '#f3f4f6',
+      border: '#e5e7eb'
     }
-  }
-  list = coursesList.value?.filter(c => (c.semester || c.category) === semester)
-  return filterCourseList(list)
+  )
 }
 
-const filterCourseList = (list) => {
-  // 排序
-  if (activeFilters.value.sort === '最新') {
-    list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  } else if (activeFilters.value.sort === '最热') {
-    list.sort((a, b) => b.views - a.views)
-  } else if (activeFilters.value.sort === '评分最高') {
-    list.sort((a, b) => b.rating - a.rating)
-  }
-
-  // 难度等级筛选
-  if (activeFilters.value.levels.length > 0) {
-    list = list?.filter(item => activeFilters.value.levels.includes(item.level))
-  }
-
-  // 学期筛选
-  if (activeFilters.value.categories.length > 0) {
-    list = list?.filter(item => activeFilters.value.categories.includes(item.semester || item.category))
-  }
-
-  // 课程类型筛选
-  if (activeFilters.value.types.length > 0) {
-    list = list?.filter(item => activeFilters.value.types.includes(item.type))
-  }
-
-  // 标签筛选
-  if (activeFilters.value.tags.length > 0) {
-    list = list?.filter(item => activeFilters.value.tags.every(tag => item.tags.includes(tag)))
-  }
-
-  return list
+// 3. Mock 数据
+const semesterMap = {
+  '1-1': '大一上',
+  '1-2': '大一下',
+  '2-1': '大二上',
+  '2-2': '大二下',
+  '3-1': '大三上',
+  '3-2': '大三下',
+  '4-1': '大四上',
+  '4-2': '大四下'
 }
 
-const goToDetail = async (id) => {
-  if (tooltipTimers.value[id]) {
-    clearTimeout(tooltipTimers.value[id])
-    tooltipTimers.value[id] = null
+// 反向映射
+const reverseSemesterMap = Object.entries(semesterMap).reduce((acc, [key, val]) => {
+  acc[val] = key
+  return acc
+}, {})
+
+// 模拟课程数据
+const mockCourses = [
+  {
+    id: 101,
+    name: '高等数学 I',
+    code: 'MATH1001',
+    semester: '1-1',
+    type: '公必',
+    teacher: '张老师',
+    credit: 5.0,
+    resources: 12,
+    likes: 45
+  },
+  {
+    id: 102,
+    name: '程序设计基础',
+    code: 'CS1001',
+    semester: '1-1',
+    type: '专必',
+    teacher: '李老师',
+    credit: 4.0,
+    resources: 28,
+    likes: 102
+  },
+  {
+    id: 103,
+    name: '思想道德修养',
+    code: 'POLI1001',
+    semester: '1-1',
+    type: '公必',
+    teacher: '王老师',
+    credit: 2.0,
+    resources: 5,
+    likes: 10
+  },
+  {
+    id: 104,
+    name: '当代文化研究',
+    code: 'PUB1001',
+    semester: '1-1',
+    type: '公选',
+    teacher: '张老师',
+    credit: 2.0,
+    resources: 5,
+    likes: 80
+  },
+  {
+    id: 201,
+    name: '高等数学 II',
+    code: 'MATH1002',
+    semester: '1-2',
+    type: '公必',
+    teacher: '张老师',
+    credit: 5.0,
+    resources: 15,
+    likes: 38
+  },
+  {
+    id: 202,
+    name: '线性代数',
+    code: 'MATH1003',
+    semester: '1-2',
+    type: '公必',
+    teacher: '赵老师',
+    credit: 3.0,
+    resources: 20,
+    likes: 88
+  },
+  {
+    id: 203,
+    name: '离散数学',
+    code: 'CS1002',
+    semester: '1-2',
+    type: '专必',
+    teacher: '钱老师',
+    credit: 4.0,
+    resources: 35,
+    likes: 150
+  },
+  {
+    id: 204,
+    name: '体育2',
+    code: 'PE1002',
+    semester: '1-2',
+    type: '公必',
+    teacher: '张老师',
+    credit: 1.0,
+    resources: 5,
+    likes: 180
+  },
+  {
+    id: 301,
+    name: '数据结构与算法',
+    code: 'CS2001',
+    semester: '2-1',
+    type: '专必',
+    teacher: '孙老师',
+    credit: 5,
+    resources: 56,
+    likes: 230
+  },
+  {
+    id: 302,
+    name: '计算机组成原理',
+    code: 'CS2002',
+    semester: '2-1',
+    type: '专必',
+    teacher: '周老师',
+    credit: 4.0,
+    resources: 30,
+    likes: 95
+  },
+  {
+    id: 303,
+    name: 'Python应用开发',
+    code: 'CS2005',
+    semester: '2-1',
+    type: '专选',
+    teacher: '吴老师',
+    credit: 2.0,
+    resources: 18,
+    likes: 67
+  },
+  {
+    id: 401,
+    name: '操作系统',
+    code: 'CS2003',
+    semester: '2-2',
+    type: '专必',
+    teacher: '郑老师',
+    credit: 4.0,
+    resources: 42,
+    likes: 180
+  },
+  {
+    id: 402,
+    name: '计算机网络',
+    code: 'CS2004',
+    semester: '2-2',
+    type: '专必',
+    teacher: '冯老师',
+    credit: 4.0,
+    resources: 38,
+    likes: 160
+  },
+  {
+    id: 501,
+    name: '计算机网络',
+    code: 'CS3001',
+    semester: '3-1',
+    type: '专必',
+    teacher: '马老师',
+    credit: 3.0,
+    resources: 18,
+    likes: 120
+  },
+  {
+    id: 502,
+    name: '数据库系统概论',
+    code: 'CS3002',
+    semester: '3-1',
+    type: '专必',
+    teacher: '刘老师',
+    credit: 3.5,
+    resources: 25,
+    likes: 140
+  },
+  {
+    id: 601,
+    name: '软件工程导论',
+    code: 'CS3003',
+    semester: '3-2',
+    type: '专选',
+    teacher: '毛老师',
+    credit: 2.0,
+    resources: 22,
+    likes: 80
+  },
+  {
+    id: 701,
+    name: '人工智能导论',
+    code: 'CS4001',
+    semester: '4-1',
+    type: '专选',
+    teacher: '林老师',
+    credit: 2.0,
+    resources: 15,
+    likes: 90
+  },
+  {
+    id: 702,
+    name: '毕业设计',
+    code: 'CS4002',
+    semester: '4-2',
+    type: '专必',
+    teacher: '何老师',
+    credit: 6.0,
+    resources: 10,
+    likes: 50
   }
-  activeCourseId.value = null
-  coursesStore.addCourseView(id)
-  router.push({ name: 'CourseDetail', params: { id } })
+]
+
+// 4. 计算属性
+const filteredList = computed(() => {
+  return mockCourses.filter((course) => {
+    const matchKeyword =
+      course.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+      course.teacher.includes(searchKeyword.value)
+    const matchType = activeType.value === '全部' || course.type === activeType.value
+    return matchKeyword && matchType
+  })
+})
+
+const groupedCourses = computed(() => {
+  const groups = {
+    '1-1': [],
+    '1-2': [],
+    '2-1': [],
+    '2-2': [],
+    '3-1': [],
+    '3-2': [],
+    '4-1': [],
+    '4-2': []
+  }
+  filteredList.value.forEach((course) => {
+    if (groups[course.semester]) {
+      groups[course.semester].push(course)
+    }
+  })
+  return groups
+})
+
+// 5. 交互逻辑
+const resetFilter = () => {
+  searchKeyword.value = ''
+  activeType.value = '全部'
 }
 
+const goToDetail = (courseId) => {
+  router.push({ name: 'CourseDetail', params: { id: courseId } })
+}
+
+// 登录相关逻辑
 const goToLogin = () => {
   router.push({ name: 'Login' })
 }
 
 const handleLogout = async () => {
   try {
-    await coursesStore.logout()
+    await toolsStore.logout()
     showUserMenu.value = false
     ElMessage.success('已退出登录')
   } catch (error) {
@@ -551,152 +536,76 @@ const handleLogout = async () => {
 }
 
 const closeDropdowns = (e) => {
-  if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
-  if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
-  if (engineRef.value && !engineRef.value.contains(e.target)) engineMenuOpen.value = false
+  if (avatarRef.value && !avatarRef.value.contains(e.target)) {
+    showUserMenu.value = false
+  }
 }
 
-// 监听器
-import { watch } from 'vue'
-watch(() => route.query, (newQuery) => {
-  if (newQuery.tagId) {
-    const tagId = newQuery.tagId
-    if (!activeFilters.value.tags.includes(tagId)) {
-      coursesStore.clearTags()
-      coursesStore.toggleTag(tagId)
-    }
+// 滚动控制逻辑
+const scrollToSemester = (queryValue) => {
+  if (!queryValue) return
 
-    if (newQuery.tagName) {
-      ElMessage.success(`已筛选标签: ${newQuery.tagName}`)
-    }
-  }
-}, { immediate: true })
+  const targetKey =
+    Object.keys(semesterMap).includes(queryValue)
+      ? queryValue
+      : reverseSemesterMap[queryValue]
 
-// 生命周期函数
+  if (!targetKey) return
+
+  nextTick(() => {
+    const element = document.getElementById(`section-${targetKey}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+}
+
+// 监听路由参数变化
+watch(
+  () => route.query.semester,
+  (newVal) => {
+    if (newVal) {
+      scrollToSemester(newVal)
+    }
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
 })
 
 onUnmounted(() => {
-  Object.values(tooltipTimers.value).forEach(timerId => {
-    if (timerId) clearTimeout(timerId)
-  })
   document.removeEventListener('click', closeDropdowns)
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* 复用部分 ToolsList 的样式 */
-@import '@/assets/css/index.css';
+@import '@/assets/css/index';
 
-  .course-tooltip {
-    @extend .course-tooltip;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: 8px;
-      width: 8px;
-      height: 8px;
-      background: $course-gray-800;
-      transform: rotate(45deg);
-    }
-  }
+.glass-header {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
-/* 毛玻璃头部 */
-.course-glass-header {
-  @extend .course-glass-header;
+.btn-primary-outline {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid #0066ff;
+  color: #0066ff;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 0.3s;
 }
 
-/* 搜索栏使用课程模块的 */
-.course-search-bar {
-  @extend .course-search-bar;
-
-  &__filter {
-    @extend .course-search-bar__filter;
-
-    &-dropdown {
-      @extend .course-search-bar__filter-dropdown;
-    }
-  }
-
-  &__input {
-    @extend .course-search-bar__input;
-  }
-
-  &__action {
-    @extend .course-search-bar__action;
-  }
+.btn-primary-outline:hover {
+  background: #0066ff;
+  color: white;
 }
 
-/* 下拉菜单使用课程模块的 */
-.course-dropdown {
-  @extend .course-dropdown;
-
-  &__header {
-    @extend .course-dropdown__header;
-  }
-
-  &__item {
-    @extend .course-dropdown__item;
-  }
-
-  &__divider {
-    @extend .course-dropdown__divider;
-  }
-}
-
-/* 标签选择器使用课程模块的 */
-.course-tag-selector {
-  &__search {
-    @extend .course-tag-selector__search;
-  }
-
-  &__container {
-    @extend .course-tag-selector__container;
-
-    &-content {
-      @extend .course-tag-selector__container-content;
-    }
-  }
-
-  &__tags {
-    @extend .course-tag-selector__tags;
-  }
-
-  &__tag {
-    @extend .course-tag-selector__tag;
-
-    &--selected {
-      @extend .course-tag-selector__tag--selected;
-    }
-
-    &--unselected {
-      @extend .course-tag-selector__tag--unselected;
-    }
-  }
-}
-
-/* 文本截断 */
-.course-line-clamp-2 {
-  @extend .course-line-clamp-2;
-}
-
-/* 滚动边距 */
-.course-scroll-mt-32 {
-  scroll-margin-top: 8rem;
-}
-
-/* 头像样式 */
-.w-10.h-10.rounded-full {
-  border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-
-  &:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s ease;
-  }
+.scroll-target {
+  scroll-margin-top: 140px;
 }
 </style>
