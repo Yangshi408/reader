@@ -40,7 +40,7 @@
         </div>
 
         <!-- 其他导航项 - 收起时居中 -->
-        <router-link to="/courses"
+        <router-link to="/course"
           :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
             isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
             route.name === 'courses' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
@@ -48,7 +48,7 @@
           <span v-if="!isCollapsed" class="ml-3 truncate">课程路线</span>
         </router-link>
 
-        <router-link to="/showcase"
+        <router-link to="/projects"
           :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
             isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
             route.name === 'showcase' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">

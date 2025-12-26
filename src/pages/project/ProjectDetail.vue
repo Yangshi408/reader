@@ -1,93 +1,127 @@
 <template>
-  <div v-if="tool && !isLoading" class="animate-fade-in max-w-5xl mx-auto">
-    <!-- 工具信息区域  -->
+  <div v-if="project && !isLoading" class="animate-fade-in max-w-5xl mx-auto">
+    <!-- 项目信息区域 -->
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex gap-8 items-start mb-8 relative overflow-hidden">
+      <!-- 背景装饰 -->
       <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
 
+      <!-- 左侧图标和统计 -->
       <div class="flex flex-col items-center gap-4 min-w-[120px]">
         <div class="w-28 h-28 rounded-3xl bg-gray-50 p-2 shadow-inner border border-gray-200">
-          <img :src="tool.logo" class="w-full h-full object-contain rounded-2xl" alt="icon">
+          <img :src="project.logo" class="w-full h-full object-contain rounded-2xl" alt="icon">
         </div>
+
+        <!-- 统计数据 -->
         <div class="flex gap-6 text-gray-500 text-sm font-medium">
-          <!-- 工具收藏按钮 -->
           <div class="flex flex-col items-center cursor-pointer" @click="handleCollect">
             <i :class="[
               'text-lg mb-1 transition-transform hover:scale-110',
               isCollected ? 'fas fa-heart text-red-500' : 'far fa-heart text-gray-400'
             ]"></i>
-            <span>{{ tool.stars }}</span>
+            <span>{{ project.stars }}</span>
           </div>
           <div class="flex flex-col items-center">
             <i class="fas fa-eye text-blue-400 text-lg mb-1"></i>
-            <span>{{ tool.views }}</span>
+            <span>{{ project.views }}</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <i class="fas fa-code-branch text-green-400 text-lg mb-1"></i>
+            <span>{{ project.contributors?.length || 0 }}</span>
           </div>
         </div>
+
         <!-- 贡献者 -->
         <div
+          v-if="project.contributors && project.contributors.length > 0"
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="userInfo.avatar || '/default-avatar.png'" class="w-5 h-5 rounded-full">
-          <span class="text-xs text-gray-600">Admin</span>
+          <img :src="project.contributors[0].avatar" class="w-5 h-5 rounded-full">
+          <span class="text-xs text-gray-600">{{ project.contributors[0].name }}</span>
         </div>
       </div>
-      <!-- 工具信息 -->
+
+      <!-- 右侧信息 -->
       <div class="flex-1 z-10">
-        <!-- 工具类型 -->
+        <!-- 项目标签 -->
         <div class="flex gap-3 mb-4">
-          <span class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">论文阅读</span>
-          <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">外部工具</span>
-          <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs">科学上网</span>
+          <span class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">{{ project.category }}</span>
+          <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{{ project.license || '开源' }}</span>
+          <span v-if="project.status === 'active'" class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs">活跃中</span>
+          <span v-else class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">已归档</span>
         </div>
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">{{ tool.name }}</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">{{ project.name }}</h1>
 
         <p class="text-gray-600 leading-relaxed mb-6">
-          {{ tool.fullDesc }}
+          {{ project.description }}
         </p>
 
-        <!-- 工具标签 -->
+        <!-- 技术栈标签 -->
         <div class="flex items-center gap-4 text-sm text-gray-500 mb-6">
-          <span class="whitespace-nowrap">标签:</span>
+          <span class="whitespace-nowrap">技术栈:</span>
           <div class="flex gap-2 flex-wrap">
             <span
-              v-for="tagId in tool.tags"
-              :key="tagId"
-              @click="goToToolsListByTag(tagId)"
-              :class="[
-                'cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition-all duration-200',
-                'flex items-center gap-1 hover:scale-105 hover:shadow-sm',
-                getTagById(tagId).color || 'bg-gray-100 text-gray-700'
-              ]"
-              :title="getTagById(tagId).name"
+              v-for="tech in project.technologies"
+              :key="tech"
+              class="cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1 hover:scale-105 hover:shadow-sm bg-blue-100 text-blue-700"
+              :title="tech"
             >
-              {{ getTagById(tagId).name }}
-              <i class="fas fa-external-link-alt text-xs opacity-70"></i>
+              {{ tech }}
             </span>
-            <div v-if="!tool.tags || tool.tags.length === 0" class="text-gray-400 text-sm">
-              暂无标签
+            <div v-if="!project.technologies || project.technologies.length === 0" class="text-gray-400 text-sm">
+              暂无技术栈
             </div>
           </div>
         </div>
 
-        <!-- 工具链接 -->
-        <a :href="tool.url" target="_blank"
-          class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-lg transition-colors group">
-          链接直达 <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
-        </a>
-        <p class="mt-2 text-xs text-gray-400">链接直达，点击后跳转新页面，为对应工具的网页。</p>
+        <!-- 项目链接 -->
+        <div class="flex gap-4">
+          <a v-if="project.githubUrl" :href="project.githubUrl" target="_blank"
+             class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
+            <i class="fab fa-github"></i> GitHub
+            <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
+          </a>
+          <a v-if="project.demoUrl" :href="project.demoUrl" target="_blank"
+             class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
+            <i class="fas fa-external-link-alt"></i> 在线演示
+            <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
+          </a>
+        </div>
+        <p class="mt-2 text-xs text-gray-400">点击链接访问项目仓库或在线演示。</p>
       </div>
     </div>
-    <!-- 使用说明 -->
+
+    <!-- 项目详情区域 -->
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
       <h2 class="text-lg font-bold text-[#00a99d] flex items-center gap-2 mb-6">
-        <i class="fas fa-info-circle"></i> 使用说明
+        <i class="fas fa-book"></i> 项目详情
       </h2>
       <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <!-- 使用 pre-line 保留换行符，并设置合适的行高 -->
         <div class="whitespace-pre-line leading-relaxed text-gray-700">
-          {{ tool.instructions }}
+          {{ project.details }}
         </div>
       </div>
     </div>
+
+    <!-- 贡献者区域 -->
+    <div v-if="project.contributors && project.contributors.length > 0" class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
+      <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
+        <i class="fas fa-users"></i> 贡献者
+        <span class="text-sm font-normal text-gray-500">
+          ({{ project.contributors.length }})
+        </span>
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div v-for="contributor in project.contributors" :key="contributor.id"
+             class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors">
+          <img :src="contributor.avatar" class="w-10 h-10 rounded-full border border-gray-300">
+          <div>
+            <div class="font-medium text-gray-800">{{ contributor.name }}</div>
+            <div class="text-xs text-gray-500">{{ contributor.role || '贡献者' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 评论区域 -->
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
       <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
@@ -158,7 +192,6 @@
             </div>
 
             <div class="flex items-center gap-4">
-              <!-- 点赞按钮 -->
               <button
                 @click="handleLikeComment(comment.id)"
                 class="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
@@ -168,7 +201,6 @@
                 <i :class="comment.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i>
                 <span class="text-sm">{{ comment.likes || 0 }}</span>
               </button>
-              <!-- 删除按钮（仅对作者或管理员显示） -->
               <button
                 v-if="checkCanDelete(comment)"
                 @click="handleDeleteComment(comment.id)"
@@ -179,7 +211,6 @@
               </button>
             </div>
           </div>
-          <!-- 评论内容 -->
           <div class="comment-content text-gray-700 leading-relaxed whitespace-pre-wrap">
             {{ comment.content }}
           </div>
@@ -243,63 +274,190 @@
       </div>
     </div>
   </div>
-
   <!-- 加载状态 -->
   <div v-else-if="isLoading" class="max-w-5xl mx-auto">
-    <tool-detail-skeleton />
+    <!-- 项目信息骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
+      <div class="flex gap-8 items-start">
+        <!-- 左侧图标区域 -->
+        <div class="flex flex-col items-center gap-4 min-w-[120px]">
+          <div class="w-28 h-28 rounded-3xl bg-gray-200"></div>
+          <div class="flex gap-6">
+            <div class="flex flex-col items-center">
+              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
+              <div class="h-3 w-8 bg-gray-200 rounded"></div>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
+              <div class="h-3 w-8 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="flex-1">
+          <!-- 标签骨架 -->
+          <div class="flex gap-3 mb-4">
+            <div class="w-16 h-6 bg-gray-200 rounded"></div>
+            <div class="w-12 h-6 bg-gray-200 rounded"></div>
+            <div class="w-20 h-6 bg-gray-200 rounded"></div>
+          </div>
+
+          <!-- 标题骨架 -->
+          <div class="h-8 bg-gray-300 rounded mb-4 max-w-md"></div>
+
+          <!-- 描述骨架 -->
+          <div class="space-y-2 mb-6">
+            <div class="h-4 bg-gray-200 rounded"></div>
+            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+          </div>
+
+          <!-- 标签骨架 -->
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-8 h-4 bg-gray-200 rounded"></div>
+            <div class="flex gap-2">
+              <div class="w-16 h-6 bg-gray-200 rounded-full"></div>
+              <div class="w-12 h-6 bg-gray-200 rounded-full"></div>
+              <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
+            </div>
+          </div>
+
+          <!-- 按钮骨架 -->
+          <div class="w-32 h-10 bg-gray-300 rounded-lg"></div>
+          <div class="w-48 h-3 bg-gray-200 rounded mt-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 项目详情骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-blue-200 rounded"></div>
+        <div class="h-6 w-24 bg-gray-300 rounded"></div>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 rounded"></div>
+          <div class="h-4 bg-gray-200 rounded w-11/12"></div>
+          <div class="h-4 bg-gray-200 rounded w-10/12"></div>
+          <div class="h-4 bg-gray-200 rounded w-9/12"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 评论区域骨架屏 -->
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-pulse">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-5 h-5 bg-gray-300 rounded"></div>
+        <div class="h-6 w-16 bg-gray-300 rounded"></div>
+        <div class="h-4 w-8 bg-gray-200 rounded"></div>
+      </div>
+
+      <!-- 排序和分页骨架 -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-4">
+          <div class="h-4 w-16 bg-gray-200 rounded"></div>
+          <div class="w-32 h-8 bg-gray-200 rounded"></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-16 h-8 bg-gray-200 rounded"></div>
+          <div class="w-20 h-4 bg-gray-200 rounded"></div>
+          <div class="w-16 h-8 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+
+      <!-- 评论列表骨架 -->
+      <div class="space-y-6 mb-8">
+        <div v-for="i in 2" :key="i" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gray-300"></div>
+              <div class="space-y-2">
+                <div class="h-4 w-24 bg-gray-300 rounded"></div>
+                <div class="h-3 w-16 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-6 bg-gray-200 rounded"></div>
+              <div class="w-6 h-6 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div class="space-y-2 mt-4">
+            <div class="h-3 bg-gray-200 rounded w-full"></div>
+            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 发表评论骨架 -->
+      <div class="mt-8">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
+          <div class="flex-1">
+            <div class="w-full h-24 bg-gray-100 rounded-lg"></div>
+            <div class="flex justify-between items-center mt-3">
+              <div class="w-12 h-3 bg-gray-200 rounded"></div>
+              <div class="w-24 h-8 bg-gray-300 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useToolsStore } from '@/store/toolsStore'
+import { useProjectsStore } from '@/store/projectsStore'
 import { ElMessage } from 'element-plus'
 import { HttpManager } from '@/api'
 import { storeToRefs } from 'pinia'
-import { predefinedTags } from '@/data/tags'
-import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/mockData'
-import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
+// 假设有项目标签数据
+// import { projectTags } from '@/store/projectTags'
+import {
+  addMockProjectComment,
+  deleteMockProjectComment,
+  getCommentsByProjectId,
+  toggleLikeMockProjectComment
+} from '@/data/project/mockData'
 
 const router = useRouter()
 const route = useRoute()
-const toolsStore = useToolsStore()
+const projectsStore = useProjectsStore()
 
 const {
   userInfo,
   isAuthenticated
-} = storeToRefs(toolsStore)
+} = storeToRefs(projectsStore)
 
 // 一、变量声明
-// 1. 工具详情相关变量
-const tool = ref(null)
+const project = ref(null)
 const isCollected = ref(false)
 const isLoading = ref(false)
-// 2. 评论相关变量
-const comments = ref([]) // 所有评论
+const comments = ref([])
 const loadingComments = ref(false)
 const submittingComment = ref(false)
 const newComment = ref('')
-const sortType = ref('latest') // 'latest' | 'hot'
-// 分页相关
+const sortType = ref('latest')
 const pagination = ref({
   page: 1,
   pageSize: 4,
   total: 0,
   totalPages: 0
 })
-// 3. 标记变量，用于组件卸载时取消异步操作
-const isComponentMounted = ref(true)
 
 // 二、计算属性
-// 2. 当前页显示的评论
 const currentPageComments = computed(() => {
   const start = (pagination.value.page - 1) * pagination.value.pageSize
   const end = start + pagination.value.pageSize
   return sortedComments.value.slice(start, end)
 })
 
-// 3. 排序后的评论
 const sortedComments = computed(() => {
   const sorted = [...comments.value]
   if (sortType.value === 'latest') {
@@ -314,37 +472,17 @@ const sortedComments = computed(() => {
 })
 
 // 三、方法
-// 1. 通过标签id获取标签的信息（name、css样式）
-const getTagById = (tagId) => {
-  return predefinedTags.find(tag => tag.id === tagId) || { name: tagId }
-}
-// 2. 点击标签的跳转逻辑
-const goToToolsListByTag = (tagId) => {
-  // 获取标签的显示名称
-  const tag = getTagById(tagId)
-  const tagName = tag.name
-  // 跳转到工具列表页，并传递标签参数
-  router.push({
-    name: 'ToolsList',
-    query: {
-      tagId,
-      tagName // 可选的，用于显示友好名称
-    }
-  })
-}
-// 3. 检测该用户是否收藏
-const checkCollectionStatus = async (toolId) => {
+const checkCollectionStatus = async (projectId) => {
   try {
-    // const response = await HttpManager.getUserCollection()
-    const response = await mockGetUserCollection() // 模拟
+    const response = await HttpManager.getUserCollection()
     isCollected.value = response.data?.some(item =>
-      item.resourceId === parseInt(toolId) && item.resourceType === 'tool'
+      item.resourceId === parseInt(projectId) && item.resourceType === 'project'
     )
   } catch (error) {
     console.error('检查收藏状态失败:', error)
   }
 }
-// 4. 收藏功能
+
 const handleCollect = async () => {
   if (!isAuthenticated.value) {
     ElMessage.warning('请先登录')
@@ -353,126 +491,61 @@ const handleCollect = async () => {
 
   try {
     if (isCollected.value) {
-      // 取消收藏
-      // await HttpManager.removeToolCollection(tool.value.id, 'tool')
-      await mockRemoveToolCollection(tool.value.id, 'tool') // 模拟
+      await HttpManager.removeProjectCollection(project.value.id)
     } else {
-      // 添加收藏
-      // await HttpManager.toggleToolCollection(tool.value.id, 'tool')
-      await mockToggleToolCollection(tool.value.id, 'tool') // 模拟
+      await HttpManager.toggleProjectCollection(project.value.id)
     }
 
-    // 更新收藏状态
     isCollected.value = !isCollected.value
     ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
   } catch (error) {
     ElMessage.error(error.message || '切换收藏状态操作失败')
   }
 }
-// 为方法4提供的收藏模拟
-let mockUserCollection = []
-const mockGetUserCollection = async () => {
-  return new Promise((resolve) => {
-    // 模拟网络延迟（500毫秒，贴近真实接口体验）
-    setTimeout(() => {
-      // 返回和真实接口结构一致的响应数据
-      resolve({
-        code: 200,
-        data: mockUserCollection, // 包含用户收藏列表
-        message: '获取收藏列表成功'
-      })
-    }, 500)
-  })
-}
-const mockRemoveToolCollection = async (resourceId, resourceType) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // 从模拟收藏列表中删除对应资源
-      mockUserCollection = mockUserCollection.filter(
-        item => !(item.resourceId === resourceId && item.resourceType === resourceType)
-      )
-      resolve({
-        code: 200,
-        message: '取消收藏成功'
-      })
-    }, 500)
-  })
-}
-const mockToggleToolCollection = async (resourceId, resourceType) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // 向模拟收藏列表中添加对应资源（避免重复添加，虽然原逻辑已判断，但模拟后端做一层防护）
-      const isExist = mockUserCollection.some(
-        item => item.resourceId === resourceId && item.resourceType === resourceType
-      )
-      if (!isExist) {
-        mockUserCollection.push({ resourceId, resourceType })
-      }
-      resolve({
-        code: 200,
-        message: '收藏成功'
-      })
-    }, 500)
-  })
-}
-// 5. 加载工具详细信息（在onMounted中使用）
-const loadToolDetail = async (id) => {
+
+const loadProjectDetail = async (id) => {
   isLoading.value = true
-  toolsStore.setToolSubmitDisabled(true) // 禁用工具提交按钮（主要是组件过渡动画和组件创建相互冲突，导致工具提交页组件未被创建。onMounted使用异步函数是导火索）
-
   try {
-    const data = await toolsStore.getToolDetail(id)
-    if (!isComponentMounted.value) return // 检查组件是否已卸载
+    const data = await projectsStore.getProjectDetail(id)
+    project.value = data
 
-    tool.value = data
-    isLoading.value = false // 提前结束加载状态
-    toolsStore.setToolSubmitDisabled(false) // 启用工具提交按钮
-
-    // 非核心数据后台加载（不阻塞UI）
-    Promise.allSettled([
-      isAuthenticated.value ? checkCollectionStatus(id) : Promise.resolve(),
-      fetchComments(id)
-    ])
+    if (isAuthenticated.value) {
+      await checkCollectionStatus(id)
+    }
+    await fetchComments(id)
   } catch (error) {
-    if (!isComponentMounted.value) return
-    console.error('加载核心数据失败:', error)
+    ElMessage.error('加载项目详情失败')
+  } finally {
+    isLoading.value = false
   }
 }
-// 6. 获取评论
-const fetchComments = async (toolId) => {
+
+const fetchComments = async (projectId) => {
   loadingComments.value = true
   try {
-    const response = await HttpManager.getToolComments(toolId)
-    if (!isComponentMounted.value) return // 检查组件是否已卸载
-
+    const response = await HttpManager.getProjectComments(projectId)
     if (response.code === 200 && response.data) {
       comments.value = response.data.map(comment => ({
         ...comment,
         canDelete: isAuthenticated.value &&
-                  (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
+          (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
       }))
       updatePagination()
     }
   } catch (error) {
     console.error('获取评论失败，使用模拟数据:', error)
-    // comments.value = []
-
-    // 以下是模拟时使用
-    // API失败时使用模拟数据
-    const mockComments = getCommentsByToolId(parseInt(toolId))
+    const mockComments = getCommentsByProjectId(parseInt(projectId))
     comments.value = mockComments.map(comment => ({
-      ...comment, // 创建副本，避免使用同一个对象的引用
+      ...comment,
       canDelete: isAuthenticated.value &&
-                (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
+        (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
     }))
     updatePagination()
   } finally {
-    if (isComponentMounted.value) {
-      loadingComments.value = false
-    }
+    loadingComments.value = false
   }
 }
-// 7. 发表评论
+
 const submitComment = async () => {
   if (!newComment.value.trim()) {
     ElMessage.warning('评论内容不能为空')
@@ -480,14 +553,13 @@ const submitComment = async () => {
   }
   submittingComment.value = true
   try {
-    const response = await HttpManager.addToolComment(tool.value.id, {
+    const response = await HttpManager.addProjectComment(project.value.id, {
       content: newComment.value.trim()
     })
     if (response.code === 200 && response.data) {
-      // 添加新评论到列表
       const newCommentData = {
         ...response.data,
-        canDelete: true // 用户自己的评论可以删除
+        canDelete: true
       }
       comments.value.unshift(newCommentData)
       updatePagination()
@@ -497,12 +569,8 @@ const submitComment = async () => {
       throw new Error(response.message || '发表评论失败')
     }
   } catch (error) {
-    // ElMessage.error(error.message || '发表失败')
-
-    // 以下是模拟时使用
-    // API失败时使用模拟数据
     console.error('发布评论失败，使用模拟数据:', error)
-    const newCommentData = addMockComment(tool.value.id, newComment.value)
+    const newCommentData = addMockProjectComment(project.value.id, newComment.value, 'project')
     comments.value.unshift({ ...newCommentData })
     updatePagination()
     newComment.value = ''
@@ -511,7 +579,7 @@ const submitComment = async () => {
     submittingComment.value = false
   }
 }
-// 8. 删除评论
+
 const handleDeleteComment = async (commentId) => {
   try {
     await ElMessage.confirm('确定要删除这条评论吗？', '提示', {
@@ -520,10 +588,9 @@ const handleDeleteComment = async (commentId) => {
       type: 'warning'
     })
 
-    const response = await HttpManager.deleteToolComment(tool.value.id, commentId)
+    const response = await HttpManager.deleteProjectComment(project.value.id, commentId)
 
     if (response.code === 200) {
-      // 从列表中移除
       const index = comments.value.findIndex(c => c.id === commentId)
       if (index !== -1) {
         comments.value.splice(index, 1)
@@ -535,13 +602,8 @@ const handleDeleteComment = async (commentId) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      // ElMessage.error(error.message || '删除失败')
-
-      // 以下是模拟时使用
-      // API失败时使用模拟数据
       console.error('删除评论失败，使用模拟数据:', error)
-      deleteMockComment(commentId)
-      // 从列表中移除
+      deleteMockProjectComment(commentId)
       const index = comments.value.findIndex(c => c.id === commentId)
       if (index !== -1) {
         comments.value.splice(index, 1)
@@ -551,16 +613,15 @@ const handleDeleteComment = async (commentId) => {
     }
   }
 }
-// 9. 点赞/取消点赞评论
+
 const handleLikeComment = async (commentId) => {
   if (!isAuthenticated.value) {
     ElMessage.warning('请先登录')
     return
   }
   try {
-    const response = await HttpManager.toggleCommentLike(tool.value.id, commentId)
+    const response = await HttpManager.toggleCommentLike(project.value.id, commentId)
     if (response.code === 200 && response.data) {
-      // 更新评论的点赞状态
       const commentIndex = comments.value.findIndex(c => c.id === commentId)
       if (commentIndex !== -1) {
         const comment = comments.value[commentIndex]
@@ -570,9 +631,7 @@ const handleLikeComment = async (commentId) => {
           likes: wasLiked ? comment.likes - 1 : comment.likes + 1,
           isLiked: !wasLiked
         }
-        // 如果需要重新排序
         if (sortType.value === 'hot') {
-          // 重新排序
           comments.value = [...comments.value]
         }
       }
@@ -581,13 +640,8 @@ const handleLikeComment = async (commentId) => {
       throw new Error(response.message || '操作失败')
     }
   } catch (error) {
-    // ElMessage.error(error.message || '操作失败')
-
-    // 以下是模拟时使用
-    // API失败时使用模拟数据
     console.error('点赞评论失败，使用模拟数据:', error)
-    toggleLikeMockComment(commentId)
-    // 更新评论的点赞状态
+    toggleLikeMockProjectComment(commentId)
     const commentIndex = comments.value.findIndex(c => c.id === commentId)
     if (commentIndex !== -1) {
       const comment = comments.value[commentIndex]
@@ -597,49 +651,41 @@ const handleLikeComment = async (commentId) => {
         likes: wasLiked ? comment.likes - 1 : comment.likes + 1,
         isLiked: !wasLiked
       }
-      console.log(comments.value[commentIndex].isLiked)
       ElMessage.success('点赞成功')
     }
   }
 }
 
-// 10. 检查是否可删除评论
 const checkCanDelete = (comment) => {
   if (!isAuthenticated.value) return false
   return userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin'
 }
 
-// 11. 排序评论
 const sortComments = () => {
-  // computed属性会自动处理排序
-  // 只需重置到第一页
   pagination.value.page = 1
 }
 
-// 12. 更新分页信息
 const updatePagination = () => {
   pagination.value.total = comments.value.length
   pagination.value.totalPages = Math.ceil(comments.value.length / pagination.value.pageSize)
 }
 
-// 13. 上一页
 const prevPage = () => {
   if (pagination.value.page > 1) {
     pagination.value.page--
   }
 }
 
-// 14. 下一页
 const nextPage = () => {
   if (pagination.value.page < pagination.value.totalPages) {
     pagination.value.page++
   }
 }
-// 15. 跳转到登录页
+
 const goToLogin = () => {
   router.push({ name: 'Login' })
 }
-// 16. 格式化时间显示
+
 const formatTime = (timeString) => {
   if (!timeString) return ''
   const now = new Date()
@@ -652,7 +698,7 @@ const formatTime = (timeString) => {
     return `${Math.floor(diffInSeconds / 60)}分钟前`
   } else if (diffInSeconds < 86400) {
     return `${Math.floor(diffInSeconds / 3600)}小时前`
-  } else if (diffInSeconds < 2592000) { // 30天
+  } else if (diffInSeconds < 2592000) {
     return `${Math.floor(diffInSeconds / 86400)}天前`
   } else {
     return commentTime.toLocaleDateString('zh-CN', {
@@ -664,21 +710,15 @@ const formatTime = (timeString) => {
 }
 
 // 四、生命周期函数
-// 1. 组件加载时加载数据
 onMounted(async () => {
-  isComponentMounted.value = true
   const id = route.params.id
-  await loadToolDetail(id)
-})
-// 2. 组件卸载时标记
-onUnmounted(() => {
-  isComponentMounted.value = false
+  await loadProjectDetail(id)
 })
 </script>
 
 <style lang="scss" scoped>
 /* 样式保持不变 */
-@import '@/assets/css/index.css';
+@import '../../assets/css/indexPro';
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
@@ -701,14 +741,12 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* 自定义滚动条 */
 textarea::-webkit-scrollbar {
   width: 6px;
 }

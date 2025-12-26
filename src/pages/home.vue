@@ -230,12 +230,12 @@
           <div class="section-container">
             <div class="section-header">
               <h2 class="section-title-text">课程浏览</h2>
-              <router-link to="/courses" class="more-btn-small">更多 →</router-link>
+              <router-link to="/course" class="more-btn-small">更多 →</router-link>
             </div>
-            <section id="courses" class="section-card">
+            <section id="course" class="section-card">
               <div class="grid-layout">
                 <a
-                  v-for="(c, i) in courses"
+                  v-for="(c, i) in course"
                   :key="i"
                   :href="c.url"
                   target="_blank"
@@ -337,7 +337,7 @@ const bgUrl = ref('')
 const sidebarItems = ref([
   { id: 'common', name: '常用', icon: 'fa-star' },
   { id: 'tools', name: '精选工具', icon: 'fa-tools' },
-  { id: 'courses', name: '课程浏览', icon: 'fa-book-open' },
+  { id: 'course', name: '课程浏览', icon: 'fa-book-open' },
   { id: 'projects', name: '项目情况', icon: 'fa-project-diagram' },
   { id: 'review', name: '审核状态', icon: 'fa-shield-alt', adminOnly: true }
 ])
@@ -687,7 +687,7 @@ const tools = [
   { name: 'VirScan', url: 'https://www.virscan.org', icon: 'https://www.virscan.org/favicon.ico', desc: '病毒扫描工具' }
 ]
 
-const courses = [
+const course = [
   { name: '慕课网', url: 'https://www.imooc.com', icon: 'https://www.imooc.com/favicon.ico', desc: 'IT技能学习平台' },
   { name: 'B站课堂', url: 'https://www.bilibili.com/cheese', icon: 'https://www.bilibili.com/favicon.ico', desc: '视频课程学习' },
   { name: 'Coursera', url: 'https://www.coursera.org', icon: 'https://www.coursera.org/favicon.ico', desc: '在线大学课程' },

@@ -2,8 +2,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { HttpManager } from '@/api'
-import { mockData } from '@/data/mockData'
-import { predefinedTags } from '@/data/tags'
+import { mockData } from '@/data/tool/mockData'
+import { predefinedTags } from '@/data/tool/tags'
 import vuexStore from '@/store/index'
 
 export const useToolsStore = defineStore('tools', () => {

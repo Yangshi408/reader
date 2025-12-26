@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex bg-gradient-to-br from-[#f3f7fc] to-[#eef3f7] text-[#2d3748] font-sans">
     <aside :class="['fixed h-full bg-white/80 backdrop-blur-xl border-r border-white/50 z-50 transition-all duration-300 shadow-lg flex flex-col', isCollapsed ? 'w-16' : 'w-64']">
-      <!-- Logo和收起按钮区域 -->
+      <!-- Logo和收起按钮区域 - 完全一样 -->
       <div class="h-20 flex items-center justify-between border-b border-gray-100 px-4 relative">
         <!-- Logo -->
         <div class="flex items-center justify-start w-30 h-21 relative">
@@ -18,9 +18,9 @@
         </button>
       </div>
 
-      <!-- 导航菜单 -->
+      <!-- 导航菜单 - 完全一样结构 -->
       <nav class="flex-1 overflow-y-auto overflow-x-hidden py-6 px-2 space-y-2">
-        <!-- 其他导航项 -->
+        <!-- 其他导航项 - 收起时居中 -->
         <router-link to="/tools"
                      :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
                    isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
@@ -29,33 +29,33 @@
           <span v-if="!isCollapsed" class="ml-3 truncate">工具资源</span>
         </router-link>
 
+        <router-link to="/course"
+                     :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
+                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
+                   route.name === 'courses' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+          <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
+          <span v-if="!isCollapsed" class="ml-3 truncate">课程路线</span>
+        </router-link>
+
         <div class="nav-group">
-          <!-- 主要分类标题 -->
+          <!-- 主要分类标题 - 收起时居中 -->
           <div :class="['flex items-center rounded-xl bg-blue-50 text-blue-600 font-bold cursor-default group', isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3']">
-            <i class="fas fa-route group-hover:rotate-12 transition-transform"></i>
-            <span v-if="!isCollapsed" class="ml-3 truncate">课程路线</span>
+            <i class="fas fa-project-diagram group-hover:rotate-12 transition-transform"></i>
+            <span v-if="!isCollapsed" class="ml-3 truncate">项目展示</span>
           </div>
 
-          <!-- 学期子分类 -->
+          <!-- 子分类 -->
           <div v-if="!isCollapsed" class="ml-10 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
-            <a v-for="semester in semesterCategories" :key="semester"
+            <a v-for="cat in categories" :key="cat"
                href="javascript:void(0)"
-               @click="handleScrollTo(semester)"
+               @click="handleScrollTo(cat)"
                class="block py-2 text-sm text-gray-500 hover:text-blue-600 transition-colors truncate">
-              {{ semester }}
+              {{ cat }}
             </a>
           </div>
         </div>
 
-        <router-link to="/projects"
-                     :class="['flex items-center rounded-lg transition-colors cursor-pointer text-decoration-none group',
-                   isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
-                   route.name === 'ProjectList' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
-          <i class="fas fa-project-diagram group-hover:rotate-12 transition-transform"></i>
-          <span v-if="!isCollapsed" class="ml-3 truncate">项目展示</span>
-        </router-link>
-
-        <!-- 返回上一级按钮 -->
+        <!-- 返回上一级按钮（只在详情页和项目提交页面显示） -->
         <div v-if="showBackButton"
              class="w-full px-2">
           <div
@@ -70,13 +70,13 @@
 
       <!-- 底部区域 -->
       <div class="mt-auto border-t border-gray-100 pt-2 px-2">
-        <!-- 课程提交按钮 -->
-        <router-link to="/course/submit"
+        <!-- 项目提交按钮 - 收起时居中 -->
+        <router-link to="/projects/submit"
                      :class="['flex items-center rounded-lg transition-colors cursor-pointer',
                    isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
-                   route.name === 'CourseSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
+                   route.name === 'ProjectSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50']">
           <i class="fas fa-plus-circle"></i>
-          <span v-if="!isCollapsed" class="ml-3 truncate">课程提交</span>
+          <span v-if="!isCollapsed" class="ml-3 truncate">项目提交</span>
         </router-link>
 
         <!-- 版权信息 -->
@@ -100,11 +100,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useCoursesStore } from '@/store/courseStore'
+import { useProjectsStore } from '@/store/projectsStore'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
-const store = useCoursesStore()
+const store = useProjectsStore()
 const { categories } = storeToRefs(store)
 const router = useRouter()
 const route = useRoute()
@@ -112,31 +112,21 @@ const route = useRoute()
 // 侧边栏收起状态
 const isCollapsed = ref(false)
 
-// 学期分类
-const semesterCategories = [
-  '大一上', '大一下',
-  '大二上', '大二下',
-  '大三上', '大三下',
-  '大四上', '大四下'
-]
-
 // 计算属性
 const showBackButton = computed(() => {
-  return route.name === 'CourseDetail' || route.name === 'CourseSubmit' || route.name !== 'CourseList'
+  return route.name === 'ProjectDetail' || route.name === 'ProjectSubmit' || route.name !== 'ProjectList'
 })
 
 // 方法
 // 1.业内跳转逻辑
 const handleScrollTo = (id) => {
   // 如果当前不在列表页，先跳转到列表页
-  if (route.name !== 'CourseList') {
-    router.push({ name: 'CourseList', hash: `#section-${id}` })
+  if (route.name !== 'ProjectList') {
+    router.push({ name: 'ProjectList', hash: `#section-${id}` })
   } else {
     // 已经在列表页，直接滚动
-    setTimeout(() => {
-      const el = document.getElementById(`section-${id}`)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
+    const el = document.getElementById(`section-${id}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
@@ -145,7 +135,7 @@ const handleBack = () => {
   if (window.history.length > 1) {
     router.go(-1)
   } else {
-    router.push({ name: 'CourseList' })
+    router.push({ name: 'ProjectList' })
   }
 }
 
@@ -155,7 +145,6 @@ const toggleSidebar = () => {
   // 保存到localStorage，保存用户偏好
   localStorage.setItem('sidebarCollapsed', isCollapsed.value.toString())
 }
-
 // 添加键盘快捷键：Ctrl+B 切换侧边栏
 const handleKeyDown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
@@ -163,7 +152,6 @@ const handleKeyDown = (e) => {
     toggleSidebar()
   }
 }
-
 // 检查localStorage中的侧边栏状态
 onMounted(async () => {
   const savedState = localStorage.getItem('sidebarCollapsed')
@@ -173,12 +161,12 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleKeyDown)
 
-  // 如果分类数据为空，则获取课程列表
+  // 如果分类数据为空，则获取项目列表
   if (categories.value.length === 0) {
     try {
-      await store.fetchCourses({}, true)
+      await store.fetchProjects({}, true)
     } catch (error) {
-      console.error('Failed to fetch courses:', error)
+      console.error('Failed to fetch projects:', error)
     }
   }
 })
@@ -189,6 +177,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-@import '@/assets/css/index.css';
+<style lang="scss" scoped>
+/* 使用与Tools完全相同的样式引用 */
+@import '@/assets/css/indexPro';
 </style>

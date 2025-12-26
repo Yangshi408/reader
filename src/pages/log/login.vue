@@ -152,12 +152,12 @@ const handleLoginIn = () => {
             notify('用户名或密码错误', 'error')
           }
         })
-        .catch(failResponse => {
-          notify('登录失败，请重试', 'error')
-        })
-        .finally(() => {
-          loading.value = false
-        })
+        // .catch(failResponse => {
+        //   notify('登录失败，请重试', 'error')
+        // })
+        // .finally(() => {
+        //   loading.value = false
+        // })
     } else {
       return false
     }

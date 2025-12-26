@@ -12,12 +12,55 @@ const constantRoutes = [
   },
   {
     path: '/profile',
-    component: RouterView,
+    component: () => import('@/pages/per/ProfileLayout.vue'),
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'profile',
-        component: () => import('@/pages/per/profile.vue')
+        redirect: '/profile/edit'
+      },
+      {
+        path: 'edit',
+        name: 'profile-edit',
+        component: () => import('@/pages/per/ProfileEdit.vue'),
+        meta: { title: '编辑资料' }
+      },
+      {
+        path: 'collection',
+        name: 'profile-collection',
+        component: () => import('@/pages/per/ProfileCollection.vue'),
+        meta: { title: '我的收藏' }
+      },
+      {
+        path: 'messages',
+        name: 'profile-messages',
+        component: () => import('@/pages/per/ProfileMessages.vue'),
+        meta: { title: '站内消息' }
+      },
+      {
+        path: 'security',
+        name: 'profile-security',
+        component: () => import('@/pages/per/ProfileSecurity.vue'),
+        meta: { title: '账户安全' }
+      },
+      {
+        path: 'settings',
+        name: 'profile-settings',
+        component: () => import('@/pages/per/ProfileSettings.vue'),
+        meta: { title: '系统设置' }
+      },
+      {
+        path: 'submissions',
+        name: 'profile-submissions',
+        component: () => import('@/pages/per/ProfileSubmissions.vue'),
+        meta: { title: '我的提交' }
+      },
+      {
+        path: 'reviews',
+        name: 'profile-reviews',
+        component: () => import('@/pages/per/ProfileReviews.vue'),
+        meta: { title: '审核状态' }
       }
     ]
   },
@@ -71,9 +114,9 @@ const constantRoutes = [
   },
   // 课程模块路由
   {
-    path: '/courses',
+    path: '/course',
     component: () => import('@/pages/course/CourseLayout.vue'),
-    redirect: '/courses/list', // 默认跳转到列表页
+    redirect: '/course/list', // 默认跳转到列表页
     children: [
       {
         path: '', // 默认子路由
@@ -97,6 +140,27 @@ const constantRoutes = [
         name: 'CourseSubmit',
         component: () => import('@/pages/course/CourseSubmit.vue'),
         meta: { title: '资料上传' }
+      }
+    ]
+  },
+  {
+    path: '/projects',
+    component: () => import('@/pages/project/ProjectLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'ProjectList',
+        component: () => import('@/pages/project/ProjectList.vue')
+      },
+      {
+        path: 'detail/:id',
+        name: 'ProjectDetail',
+        component: () => import('@/pages/project/ProjectDetail.vue')
+      },
+      {
+        path: 'submit',
+        name: 'ProjectSubmit',
+        component: () => import('@/pages/project/ProjectSubmit.vue')
       }
     ]
   }
