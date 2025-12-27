@@ -34,7 +34,7 @@
         <div
           v-if="project.contributors && project.contributors.length > 0"
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="project.contributors[0].avatar" class="w-5 h-5 rounded-full">
+          <img :src="project.contributors[0].avatar" alt='用户头像' class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">{{ project.contributors[0].name }}</span>
         </div>
       </div>
@@ -113,7 +113,7 @@
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div v-for="contributor in project.contributors" :key="contributor.id"
              class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors">
-          <img :src="contributor.avatar" class="w-10 h-10 rounded-full border border-gray-300">
+          <img :src="contributor.avatar" alt='用户头像' class="w-10 h-10 rounded-full border border-gray-300">
           <div>
             <div class="font-medium text-gray-800">{{ contributor.name }}</div>
             <div class="text-xs text-gray-500">{{ contributor.role || '贡献者' }}</div>
@@ -411,12 +411,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useProjectsStore } from '@/store/projectsStore'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex' // 修改：使用 Vuex
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { HttpManager } from '@/api'
-import { storeToRefs } from 'pinia'
 // 假设有项目标签数据
 // import { projectTags } from '@/store/projectTags'
 import {
@@ -428,12 +427,10 @@ import {
 
 const router = useRouter()
 const route = useRoute()
-const projectsStore = useProjectsStore()
+const store = useStore()
 
-const {
-  userInfo,
-  isAuthenticated
-} = storeToRefs(projectsStore)
+const userInfo = computed(() => store.getters.userInfo)
+const isAuthenticated = computed(() => store.getters.isLoggedIn)
 
 // 一、变量声明
 const project = ref(null)
@@ -506,8 +503,7 @@ const handleCollect = async () => {
 const loadProjectDetail = async (id) => {
   isLoading.value = true
   try {
-    const data = await projectsStore.getProjectDetail(id)
-    project.value = data
+    project.value = await store.dispatch('getProjectDetail', id)
 
     if (isAuthenticated.value) {
       await checkCollectionStatus(id)
@@ -547,14 +543,14 @@ const fetchComments = async (projectId) => {
 }
 
 const submitComment = async () => {
-  if (!newComment.value.trim()) {
+  if (!(newComment.value || '').trim()) {
     ElMessage.warning('评论内容不能为空')
     return
   }
   submittingComment.value = true
   try {
     const response = await HttpManager.addProjectComment(project.value.id, {
-      content: newComment.value.trim()
+      content: (newComment.value || '').trim()
     })
     if (response.code === 200 && response.data) {
       const newCommentData = {
@@ -582,7 +578,7 @@ const submitComment = async () => {
 
 const handleDeleteComment = async (commentId) => {
   try {
-    await ElMessage.confirm('确定要删除这条评论吗？', '提示', {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'

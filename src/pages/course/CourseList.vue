@@ -308,7 +308,7 @@ const userInitial = computed(() => {
 
 // 执行搜索
 const handleSearch = () => {
-  if (!searchInput.value.trim()) {
+  if (!(searchInput.value || '').trim()) {
     if (searchEngine.value === 'local') {
       // 本站搜索清空时，重置状态
       hasSearched.value = false
@@ -381,8 +381,7 @@ const goToLogin = () => {
 
 const handleLogout = async () => {
   try {
-    store.commit('clearUserInfo')
-    store.commit('setToken', '')
+    await store.dispatch('logout')  // 调用 Vuex 的 logout action
     showUserMenu.value = false
     ElMessage.success('已退出登录')
   } catch (error) {
@@ -419,7 +418,7 @@ const reverseSemesterMap = Object.entries(semesterMap).reduce((acc, [k, v]) => {
 const mockCourses = [
   { id: 101, name: '高等数学 I', code: 'MATH1001', semester: '1-1', type: '公必', teacher: '张老师', credit: 5.0, resources: 12, likes: 45 },
   { id: 102, name: '程序设计基础', code: 'CS1001', semester: '1-1', type: '专必', teacher: '李老师', credit: 4.0, resources: 28, likes: 102 },
-  { id: 103, name: '思想道德修养', code: 'POLI1001', semester: '1-1', type: '公必', teacher: '王老师', credit: 2.0, resources: 5, likes: 10 },
+  { id: 103, name: '思想道德修养', code: 'POLIO1001', semester: '1-1', type: '公必', teacher: '王老师', credit: 2.0, resources: 5, likes: 10 },
   { id: 104, name: '当代文化研究', code: 'PUB1001', semester: '1-1', type: '公选', teacher: '张老师', credit: 2.0, resources: 5, likes: 80 },
   { id: 201, name: '高等数学 II', code: 'MATH1002', semester: '1-2', type: '公必', teacher: '张老师', credit: 5.0, resources: 15, likes: 38 },
   { id: 202, name: '线性代数', code: 'MATH1003', semester: '1-2', type: '公必', teacher: '赵老师', credit: 3.0, resources: 20, likes: 88 },
@@ -440,7 +439,7 @@ const mockCourses = [
 // 计算属性：过滤逻辑
 const filteredList = computed(() => {
   return mockCourses.filter((course) => {
-    const keyword = searchInput.value.toLowerCase()
+    const keyword = String(searchInput.value || '').toLowerCase()
     // 只有在是本站搜索且有输入时，才进行关键词过滤
     const matchKeyword = (searchEngine.value === 'local' && keyword)
       ? (course.name.toLowerCase().includes(keyword) || course.teacher.includes(keyword))

@@ -279,13 +279,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useStore } from 'vuex'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
+const store = useStore()
 
 // 1. 状态管理
 const isLiked = ref(false)
 const sortType = ref('hot') // 'hot' | 'time'
+
+const isAuthenticated = computed(() => store.getters.isLoggedIn)
+// const userInfo = computed(() => store.getters.userInfo)
 
 // 2. Mock 数据
 const courseInfo = ref({
@@ -338,16 +343,37 @@ const goBack = () => {
   }
 }
 
-const toggleLike = () => {
+const toggleLike = async () => {
+  if (!isAuthenticated.value) {
+    try {
+      await ElMessageBox.confirm('请先登录以收藏课程', '提示', {
+        confirmButtonText: '去登录',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      await router.push('/')
+    } catch {
+      // 用户点击取消
+    }
+    return
+  }
+
   isLiked.value = !isLiked.value
   if (isLiked.value) {
     ElMessage.success('课程已加入收藏夹')
+    // 这里可以调用 API 添加收藏
   } else {
     ElMessage.info('已取消收藏')
+    // 这里可以调用 API 移除收藏
   }
 }
 
 const likeComment = (id) => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录以点赞评论')
+    return
+  }
+
   const comment = comments.value.find(c => c.id === id)
   if (comment) {
     if (comment.isLiked) {
@@ -361,6 +387,12 @@ const likeComment = (id) => {
 }
 
 const goToUpload = () => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录以上传资料')
+    router.push('/')
+    return
+  }
+
   // 假设当前课程ID为 123 (实际应从 API 获取的 id 字段取，这里暂用 123 模拟)
   // 如果你的 courseInfo 中包含 id，请使用 courseInfo.value.id
   const currentCourseId = '123'
