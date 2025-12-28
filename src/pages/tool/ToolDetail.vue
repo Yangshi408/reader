@@ -419,6 +419,7 @@ const mockToggleToolCollection = async (resourceId, resourceType) => {
 }
 // 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
+  console.log('加载工具详情，ID:', id)
   isLoading.value = true
   // 使用 Vuex mutation
   store.commit('setDisableToolSubmit', true)

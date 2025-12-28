@@ -449,12 +449,12 @@ const goToDetail = async (id) => {
     tooltipTimers.value[id] = null
   }
   activeToolId.value = null
-  // 使用 Vuex action
-  await store.dispatch('addToolView', id)
-  await router.push({
+  router.push({
     name: 'ToolDetail',
     params: { id }
   })
+  // 使用 Vuex action
+  await store.dispatch('addToolView', id)
 }
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
 // 10. 进入登录页面
@@ -489,7 +489,6 @@ const toggleTag = (tagId) => {
   // 使用 Vuex action
   store.dispatch('toggleTag', { type: 'tools', tag: tagId })
 }
-
 // 12. 辅助：关闭下拉菜单
 const filterRef = ref(null)
 const avatarRef = ref(null)
