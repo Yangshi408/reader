@@ -259,7 +259,7 @@ import { HttpManager } from '@/api'
 import { storeToRefs } from 'pinia'
 import { predefinedTags } from '@/data/tool/tags'
 import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/tool/mockData'
-import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
+import ToolDetailSkeleton from '../../components/DetailSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()

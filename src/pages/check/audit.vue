@@ -1,0 +1,647 @@
+<template>
+    <div class="audit-page p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+        <!-- 顶部导航栏 -->
+        <div class="top-nav flex justify-between items-center mb-6">
+            <div class="flex items-center gap-4">
+                <el-button type="primary" plain @click="router.push('/home')" class="home-btn">
+                    <i class="fas fa-home mr-2"></i>返回主页
+                </el-button>
+                <h1 class="text-2xl font-bold text-gray-800">审核中心</h1>
+            </div>
+            
+            <!-- 用户头像（与home.vue逻辑一致） -->
+            <div class="user-avatar-container relative" ref="avatarRef">
+                <!-- 头像按钮 -->
+                <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
+                    <!-- 情况 1: 已登录 且 有头像图片 -->
+                    <template v-if="user.isLogin && user.avatar">
+                        <img
+                            :src="user.avatar"
+                            class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
+                            alt="User Avatar"
+                        >
+                        <!-- 在线状态绿点 -->
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    </template>
+
+                    <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
+                    <template v-else-if="user.isLogin">
+                        <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
+                            {{ userInitial }}
+                        </div>
+                        <!-- 在线状态绿点 -->
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    </template>
+
+                    <!-- 情况 3: 游客 (显示 "访") -->
+                    <template v-else>
+                        <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
+                            {{ userInitial }}
+                        </div>
+                    </template>
+                </div>
+
+                <!-- 下拉菜单 -->
+                <div v-if="showUserMenu"
+                    class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
+                    <!-- 已登录菜单内容 -->
+                    <template v-if="user.isLogin">
+                        <div class="px-4 py-3 border-b border-gray-50">
+                            <p class="text-sm font-bold text-gray-800 truncate">{{ user.nickName || '管理员' }}</p>
+                            <p class="text-xs text-gray-400 truncate">已登录</p>
+                        </div>
+                        <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                            <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+                        </router-link>
+                        <div class="h-px bg-gray-100 my-1"></div>
+                        <p @click="handleLogout" class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                        </p>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- 审核主卡片 -->
+        <el-card class="shadow-xl border-0">
+            <!-- 页面标题和描述 -->
+            <div class="header mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="title text-2xl font-bold text-gray-800">管理员审核中心</h2>
+                    <el-tag type="warning" size="large" class="animate-pulse">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        待审核：{{ total }} 项
+                    </el-tag>
+                </div>
+                <p class="meta text-gray-600">
+                    查看并处理待审核的工具、课程资源与项目。请仔细审核内容，确保符合平台规范。
+                </p>
+            </div>
+
+            <!-- 标签页 -->
+            <el-tabs v-model="activeTab" class="mt-6">
+                <el-tab-pane name="tools">
+                    <template #label>
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-tools"></i>工具审核
+                        </span>
+                    </template>
+                </el-tab-pane>
+                <el-tab-pane name="courses">
+                    <template #label>
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-book-open"></i>课程审核
+                        </span>
+                    </template>
+                </el-tab-pane>
+                <el-tab-pane name="projects">
+                    <template #label>
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-project-diagram"></i>项目审核
+                        </span>
+                    </template>
+                </el-tab-pane>
+            </el-tabs>
+
+            <!-- 审核内容区域 -->
+            <div class="mt-8">
+                <el-skeleton :loading="loading" animated :count="3">
+                    <template #template>
+                        <el-card class="mb-4">
+                            <el-skeleton-item variant="h3" style="width: 60%;" />
+                            <div class="mt-4">
+                                <el-skeleton-item variant="p" style="width: 100%;" />
+                                <el-skeleton-item variant="p" style="width: 90%;" />
+                                <el-skeleton-item variant="p" style="width: 80%;" />
+                            </div>
+                            <div class="mt-4 flex justify-between">
+                                <el-skeleton-item variant="button" style="width: 100px;" />
+                                <el-skeleton-item variant="button" style="width: 100px;" />
+                            </div>
+                        </el-card>
+                    </template>
+
+                    <template #default>
+                        <!-- 空状态 -->
+                        <div v-if="items.length === 0" class="empty-wrap py-16">
+                            <el-empty description="暂无待审核项" :image-size="200">
+                                <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
+                                <p class="text-gray-500 mt-2">所有内容已审核完毕！</p>
+                            </el-empty>
+                        </div>
+
+                        <!-- 审核项目列表 -->
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <el-card 
+                                v-for="item in items" 
+                                :key="item.id" 
+                                class="item-card hover:shadow-lg transition-all duration-300 border border-gray-200"
+                                :class="{'border-blue-200 bg-blue-50': activeTab === 'tools', 
+                                         'border-green-200 bg-green-50': activeTab === 'courses',
+                                         'border-purple-200 bg-purple-50': activeTab === 'projects'}"
+                            >
+                                <!-- 卡片头部 -->
+                                <div class="item-head mb-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="title text-lg font-bold text-gray-800 mb-1">
+                                                {{ getItemField(item, 'title') }}
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <el-avatar 
+                                                    :size="24" 
+                                                    :src="item.uploaderAvatar" 
+                                                    class="mr-1"
+                                                >
+                                                    {{ getInitial(item.uploader || item.author || item.owner) }}
+                                                </el-avatar>
+                                                <span class="sub text-sm text-gray-500">
+                                                    上传者：{{ item.uploader || item.author || item.owner }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <el-tag 
+                                            :type="getTypeTag(item)" 
+                                            size="small"
+                                            class="ml-2"
+                                        >
+                                            {{ getTypeLabel() }}
+                                        </el-tag>
+                                    </div>
+                                </div>
+
+                                <!-- 卡片内容（根据不同类型显示不同字段） -->
+                                <div class="item-body mb-4">
+                                    <!-- 工具类型 -->
+                                    <div v-if="activeTab === 'tools'" class="space-y-3">
+                                        <div>
+                                            <label class="text-xs text-gray-500 block mb-1">简介</label>
+                                            <p class="text-gray-700">{{ item.desc || item.description || '无简介' }}</p>
+                                        </div>
+                                        <div v-if="item.category" class="flex items-center gap-2">
+                                            <label class="text-xs text-gray-500">分类：</label>
+                                            <el-tag size="small">{{ item.category }}</el-tag>
+                                        </div>
+                                        <div v-if="item.tags && item.tags.length" class="flex flex-wrap gap-1">
+                                            <el-tag 
+                                                v-for="tag in item.tags.slice(0, 3)" 
+                                                :key="tag" 
+                                                size="mini"
+                                                type="info"
+                                            >
+                                                {{ tag }}
+                                            </el-tag>
+                                            <el-tag v-if="item.tags.length > 3" size="mini" type="info">
+                                                +{{ item.tags.length - 3 }}
+                                            </el-tag>
+                                        </div>
+                                        <div v-if="item.url" class="text-sm">
+                                            <label class="text-gray-500">链接：</label>
+                                            <a :href="item.url" target="_blank" class="text-blue-600 hover:underline truncate block">
+                                                {{ item.url }}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- 课程类型 -->
+                                    <div v-else-if="activeTab === 'courses'" class="space-y-3">
+                                        <div>
+                                            <label class="text-xs text-gray-500 block mb-1">课程名称</label>
+                                            <p class="text-gray-700 font-medium">{{ item.courseName || item.name }}</p>
+                                        </div>
+                                        <div v-if="item.courseId" class="text-sm">
+                                            <label class="text-gray-500">课程ID：</label>
+                                            <span class="text-gray-700">{{ item.courseId }}</span>
+                                        </div>
+                                        <div v-if="item.type" class="flex items-center gap-2">
+                                            <label class="text-xs text-gray-500">类型：</label>
+                                            <el-tag size="small">{{ item.type === 'doc' ? '文档' : item.type === 'video' ? '视频' : item.type }}</el-tag>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 block mb-1">描述</label>
+                                            <p class="text-gray-700">{{ item.description || '无描述' }}</p>
+                                        </div>
+                                        <div v-if="item.link" class="text-sm">
+                                            <label class="text-gray-500">课程链接：</label>
+                                            <a :href="item.link" target="_blank" class="text-blue-600 hover:underline truncate block">
+                                                {{ item.link }}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- 项目类型 -->
+                                    <div v-else class="space-y-3">
+                                        <div>
+                                            <label class="text-xs text-gray-500 block mb-1">项目名称</label>
+                                            <p class="text-gray-700 font-medium">{{ item.name || item.title }}</p>
+                                        </div>
+                                        <div v-if="item.description" class="text-sm">
+                                            <label class="text-gray-500">描述：</label>
+                                            <p class="text-gray-700 line-clamp-2">{{ item.description }}</p>
+                                        </div>
+                                        <div v-if="item.category" class="flex items-center gap-2">
+                                            <label class="text-xs text-gray-500">分类：</label>
+                                            <el-tag size="small">{{ item.category }}</el-tag>
+                                        </div>
+                                        <div v-if="item.technologies && item.technologies.length" class="flex flex-wrap gap-1">
+                                            <label class="text-xs text-gray-500 w-full mb-1">技术栈：</label>
+                                            <el-tag 
+                                                v-for="tech in item.technologies.slice(0, 4)" 
+                                                :key="tech" 
+                                                size="mini"
+                                                type="warning"
+                                            >
+                                                {{ tech }}
+                                            </el-tag>
+                                        </div>
+                                        <div class="flex flex-col gap-1">
+                                            <div v-if="item.githubUrl" class="text-sm">
+                                                <i class="fab fa-github mr-1"></i>
+                                                <a :href="item.githubUrl" target="_blank" class="text-blue-600 hover:underline">
+                                                    GitHub仓库
+                                                </a>
+                                            </div>
+                                            <div v-if="item.demoUrl" class="text-sm">
+                                                <i class="fas fa-external-link-alt mr-1"></i>
+                                                <a :href="item.demoUrl" target="_blank" class="text-blue-600 hover:underline">
+                                                    在线演示
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 卡片底部 -->
+                                <div class="item-foot pt-4 border-t border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <div class="left text-xs text-gray-500">
+                                            <i class="far fa-clock mr-1"></i>
+                                            提交时间：{{ formatDate(item.created_at || item.created) }}
+                                        </div>
+                                        <div class="right flex gap-2">
+                                            <el-button 
+                                                type="success" 
+                                                size="small" 
+                                                @click="review(item, 'approve')"
+                                                class="flex items-center gap-1"
+                                            >
+                                                <i class="fas fa-check"></i>通过
+                                            </el-button>
+                                            <el-button 
+                                                type="danger" 
+                                                size="small" 
+                                                plain
+                                                @click="review(item, 'reject')"
+                                                class="flex items-center gap-1"
+                                            >
+                                                <i class="fas fa-times"></i>拒绝
+                                            </el-button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </div>
+
+                        <!-- 分页 -->
+                        <div class="mt-8 flex justify-center">
+                            <el-pagination 
+                                background 
+                                layout="prev, pager, next, jumper, total" 
+                                :current-page="page" 
+                                :page-size="pageSize" 
+                                :total="total" 
+                                @current-change="onPageChange"
+                                class="audit-pagination"
+                            />
+                        </div>
+                    </template>
+                </el-skeleton>
+            </div>
+        </el-card>
+    </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { HttpManager } from '../../api'
+// 本地 mock（开发时使用），若后端可用请将 useMock 设为 false
+import { getPendingReviewsMock, reviewItemMock } from '@/data/check/mockData'
+const useMock = true
+
+const router = useRouter()
+
+// 一、变量定义
+const activeTab = ref('tools')
+const loading = ref(false)
+const items = ref([])
+const page = ref(1)
+const pageSize = ref(6)
+const total = ref(0)
+// 用户菜单显示控制
+const showUserMenu = ref(false)
+const avatarRef = ref(null)
+// 用户状态
+const user = ref({
+    isLogin: true,
+    role: 'admin',
+    nickName: '',
+    avatar: ''
+})
+
+// 二、计算属性
+// 1. 用户头像初始化
+const userInitial = computed(() => {
+    // 游客显示 '访'
+    if (!user.value.isLogin) return '访'
+    // 已登录（但没图片的情况）显示 '我'
+    return '我'
+})
+
+// 三、方法
+// 1. 获取类型标签
+const getTypeLabel = () => {
+    const map = { tools: '工具', courses: '课程', projects: '项目' }
+    return map[activeTab.value] || '未知'
+}
+// 2. 获取类型标签颜色
+const getTypeTag = () => {
+    if (activeTab.value === 'tools') return 'primary'
+    if (activeTab.value === 'courses') return 'success'
+    return 'warning'
+}
+// 3. 获取项目字段（处理不同字段名）
+const getItemField = (item, field) => {
+    if (activeTab.value === 'tools') {
+        const toolFields = { title: 'name', description: 'desc' }
+        return item[toolFields[field] || field] || item[field] || ''
+    } else if (activeTab.value === 'courses') {
+        const courseFields = { title: 'courseName' }
+        return item[courseFields[field] || field] || item[field] || ''
+    } else {
+        const projectFields = { title: 'name' }
+        return item[projectFields[field] || field] || item[field] || ''
+    }
+}
+// 5. 获取首字母（用于头像）
+const getInitial = (name) => {
+    if (!name) return '?'
+    return name.charAt(0).toUpperCase()
+}
+// 6. 规范化后端响应数据
+function normalizeResponse(res) {
+    if (!res) return { results: [], total: 0 }
+    if (Array.isArray(res)) return { results: res, total: res.length }
+    if (res.data) {
+        if (Array.isArray(res.data)) return { results: res.data, total: res.data.length }
+        if (Array.isArray(res.data.results)) return { 
+            results: res.data.results, 
+            total: res.data.total || res.data.count || res.data.results.length 
+        }
+    }
+    if (Array.isArray(res.results)) return { 
+        results: res.results, 
+        total: res.total || res.count || res.results.length 
+    }
+    return { results: [], total: 0 }
+}
+// 7. 获取待审核列表
+async function fetchPending(t = null, p = 1) {
+    loading.value = true
+    const type = t || activeTab.value // 当前页标签是用于页内切换时使用
+    try {
+        const res = useMock 
+            ? await getPendingReviewsMock({ type, page: p, page_size: pageSize.value }) 
+            : await HttpManager.getPendingReviews({ type, page: p, page_size: pageSize.value })
+        
+        const { results, total: tot } = normalizeResponse(res)
+
+        // 处理数据，确保字段符合审核需求
+        items.value = results.map(item => {
+            // 根据类型补充字段
+            const processed = { ...item }
+
+            // 确保有上传者信息
+            if (!processed.uploader && !processed.author && !processed.owner) {
+                processed.uploader = '匿名用户'
+            }
+
+            return processed
+        })
+
+        total.value = tot
+        page.value = p
+    } catch (e) {
+        console.error(e)
+        ElMessage.error('获取待审核列表失败')
+    } finally {
+        loading.value = false
+    }
+}
+// 8. 处理分页变化
+function onPageChange(p) {
+    fetchPending(null, p)
+}
+// 9. 格式化日期
+function formatDate(t) {
+    if (!t) return '-'
+    const d = new Date(t)
+    if (isNaN(d.getTime())) return t
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+// 10. 审核操作
+async function review(item, action) {
+    const actionText = action === 'approve' ? '通过' : '拒绝'
+    const actionIcon = action === 'approve' ? 'success' : 'warning'
+
+    try {
+        await ElMessageBox.confirm(
+            `确认要${actionText}【${getItemField(item, 'title')}】吗？`,
+            '审核确认',
+            {
+                confirmButtonText: '确认',
+                cancelButtonText: '取消',
+                type: actionIcon,
+                icon: action === 'approve' ? 'el-icon-check' : 'el-icon-close',
+                customClass: 'audit-confirm-dialog'
+            }
+        )
+
+        const params = { action, resourceType: activeTab.value }
+
+        if (useMock) {
+            await reviewItemMock(item.id || item._id || item.resourceId, params)
+        } else {
+            await HttpManager.reviewItem(item.id || item._id || item.resourceId, params)
+        }
+
+        ElMessage.success(`已${actionText}该${getTypeLabel()}`)
+
+        // 从当前列表中移除已处理项
+        items.value = items.value.filter(i => 
+            (i.id || i._id || i.resourceId) !== (item.id || item._id || item.resourceId)
+        )
+
+        total.value = Math.max(0, total.value - 1)
+
+        // 如果当前页没有内容了，回到第一页
+        if (items.value.length === 0 && page.value > 1) {
+            page.value = 1
+            fetchPending(null, 1)
+        }
+
+    } catch (e) {
+        if (e !== 'cancel') {
+            console.error(e)
+            ElMessage.error('操作失败')
+        }
+    }
+}
+// 11. 处理用户操作
+function handleLogout() {
+    user.value.isLogin = false
+    showUserMenu.value = false
+    ElMessage.success('已退出登录')
+}
+// 12. 关闭下拉菜单
+const closeDropdowns = (e) => {
+    if (avatarRef.value && !avatarRef.value.contains(e.target)) {
+        showUserMenu.value = false
+    }
+}
+
+// 四、监听标签页变化
+watch(activeTab, (newTab) => {
+    console.log('切换到标签页：', newTab)
+    page.value = 1
+    fetchPending(newTab, 1)
+})
+
+// 五、生命周期钩子
+// 1. 组件挂载
+onMounted(() => {
+    // 初始获取工具待审核列表
+    fetchPending('tools', 1)
+    document.addEventListener('click', closeDropdowns)
+})
+// 2. 组件卸载时移除事件监听
+onUnmounted(() => {
+    document.removeEventListener('click', closeDropdowns)
+})
+</script>
+
+<style scoped>
+.audit-page {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.top-nav {
+    background: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.home-btn {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.animate-pop-in {
+    animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.shadow-card {
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.item-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.item-head .title {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.item-head .sub {
+    color: var(--el-color-text-2);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.item-body {
+    color: var(--el-color-text-1);
+    margin: 12px 0;
+}
+
+.item-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+}
+
+.item-foot .left {
+    color: var(--el-color-text-2);
+    font-size: 12px;
+}
+
+.item-foot .right > .el-button + .el-button {
+    margin-left: 8px;
+}
+
+.empty-wrap {
+    padding: 48px 0;
+}
+
+.audit-pagination {
+    :deep(.el-pagination__jump) {
+        margin-left: 16px;
+    }
+    
+    :deep(.el-pagination__total) {
+        margin-left: 16px;
+        font-size: 14px;
+    }
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+:deep(.el-tabs__item) {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+:deep(.el-tabs__active-bar) {
+    height: 3px;
+    border-radius: 1.5px;
+}
+</style>
