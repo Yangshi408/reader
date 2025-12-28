@@ -246,7 +246,7 @@
 
   <!-- 加载状态 -->
   <div v-else-if="isLoading" class="max-w-5xl mx-auto">
-    <tool-detail-skeleton />
+    <detailSkeleton />
   </div>
 </template>
 
@@ -258,7 +258,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { HttpManager } from '@/api'
 import { predefinedTags } from '@/data/tool/tags'
 import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/tool/mockData'
-import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
+import detailSkeleton from '@/components/DetailSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()
