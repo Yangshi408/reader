@@ -61,44 +61,57 @@
       </div>
       <div class="content-container">
         <!-- 左侧可折叠侧边栏 -->
-        <!-- 还原 w-64 (256px) 和 w-20 (80px) 的初始大小 -->
-        <aside class="sidebar" :class="{ 'collapsed': isCollapsed, 'expanded': !isCollapsed }">
+        <aside class="sidebar" :class="{ 'collapsed': isSidebarCollapsed, 'expanded': !isSidebarCollapsed }">
           <div class="sidebar-header">
-            <img v-if="!isCollapsed" :src="logoImg" alt="Logo" class="sidebar-logo"/>
-            <button @click="isCollapsed = !isCollapsed" class="toggle-btn">
-              <i :class="['fas', isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left']"></i>
+            <img v-if="!isSidebarCollapsed" :src="logoImg" alt="Logo" class="sidebar-logo"/>
+            <button @click="toggleSidebar" class="toggle-btn">
+              <i :class="['fas', isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left']"></i>
             </button>
           </div>
           <nav class="nav-list">
             <div
               v-for="item in visibleSidebarItems"
               :key="item.id"
-              :class="['nav-item', { active: activeSection === item.id }]"
+              :class="['nav-item', { active: homeActiveSection === item.id }]"
               @click="handleNavItem(item)"
             >
-              <i :class="['fas nav-icon', item.icon, !isCollapsed ? 'with-margin' : '']"></i>
-              <span v-if="!isCollapsed" class="nav-text">{{ item.name }}</span>
+              <i :class="['fas nav-icon', item.icon, !isSidebarCollapsed ? 'with-margin' : '']"></i>
+              <span v-if="!isSidebarCollapsed" class="nav-text">{{ item.name }}</span>
+              <!-- 移除了右侧的叉叉按钮 -->
             </div>
-            <!-- 添加自定义导航 -->
+
+            <!-- 添加自定义导航按钮 -->
             <div
-              v-if="!isCollapsed"
+              v-if="!isSidebarCollapsed"
               class="nav-item add-item"
-              @click.stop="showAddMenu = !showAddMenu"
+              @click.stop="toggleAddMenu"
             >
               <i class="fas fa-plus nav-icon"></i>
-              <span class="nav-text with-margin">添加导航</span>
+              <span class="nav-text">添加导航</span>
+
+              <!-- 添加菜单 -->
               <div v-if="showAddMenu" class="add-menu">
-                <div @click="addCustom('我的博客', 'fa-blog')">我的博客</div>
-                <div @click="addCustom('音乐', 'fa-music')">音乐</div>
-                <div @click="addCustom('AI工具', 'fa-robot')">AI工具</div>
-                <div @click="addCustom('ChatGPT', 'fa-brain')">ChatGPT</div>
+                <div
+                  v-for="option in addMenuOptions"
+                  :key="option.name"
+                  @click.stop="handleAddMenuClick(option)"
+                  class="add-option"
+                >
+                  <i :class="['fas', option.icon, 'option-icon']"></i>
+                  <span class="option-name">{{ option.name }}</span>
+                  <div class="option-status">
+                    <i v-if="isCustomItemAdded(option.name, option.icon)"
+                       class="fas fa-minus remove-icon"></i>
+                    <i v-else class="fas fa-plus add-icon"></i>
+                  </div>
+                </div>
               </div>
             </div>
           </nav>
         </aside>
 
         <!-- 主内容区 -->
-        <main :class="['main-content', isCollapsed ? 'no-margin' : 'with-margin']">
+        <main :class="['main-content', isSidebarCollapsed ? 'no-margin' : 'with-margin']">
           <div class="header-section">
             <!-- 三个快捷按钮 -->
             <div class="item-wrapper">
@@ -117,7 +130,7 @@
 
             <!-- 搜索框区域 -->
             <div class="search-wrapper">
-              <!-- 左侧：日期 (还原 text-5xl 和 text-2xl) -->
+              <!-- 左侧：日期 -->
               <div class="data-wrapper">
                 <div class="date-big">{{ today }}</div>
                 <div class="date-small">{{ weekday }}</div>
@@ -126,7 +139,7 @@
               <!-- 中间：搜索栏 -->
               <div class="search-bar">
                 <div class="engine-wrapper">
-                  <div class="engine-trigger" @click.stop="engineMenuOpen = !engineMenuOpen">
+                  <div class="engine-trigger" @click.stop="toggleEngineMenu">
                     <span>{{ currentEngineName }}</span>
                     <i :class="['fas fa-chevron-down arrow-icon', { 'rotate': engineMenuOpen }]"></i>
                   </div>
@@ -147,24 +160,25 @@
                 <input
                   v-model="searchInput"
                   @keydown.enter="doSearch"
+                  @focus="handleSearchFocus"
                   placeholder="输入想要搜索的内容..."
                   class="search-input"
                 />
                 <button @click="doSearch" class="search-btn">搜索</button>
               </div>
 
-              <!-- 右侧：时间 (还原 text-6xl) -->
+              <!-- 右侧：时间 -->
               <div class="time-wrapper">
                 <!-- 头像 -->
                 <div class="avatar-container">
-                  <button @click.stop="dropdownOpen = !dropdownOpen" class="avatar-btn">
-                    <span :class="['avatar-initial', user.isLogin ? 'login-avatar' : 'guest-avatar']">
+                  <button @click.stop="toggleDropdown" class="avatar-btn">
+                    <span :class="['avatar-initial', isLoggedIn ? 'login-avatar' : 'guest-avatar']">
                       {{ userInitial }}
                     </span>
                   </button>
                   <div v-if="dropdownOpen" class="dropdown-menu">
                     <a href="/profile" class="dropdown-item login-option">个人主页</a>
-                    <a v-if="user.isLogin" href="/logout" class="dropdown-item login-option">退出登陆</a>
+                    <a v-if="isLoggedIn" href="/logout" class="dropdown-item login-option">退出登陆</a>
                     <a v-else href="/" class="dropdown-item login-option">点击登录</a>
                   </div>
                 </div>
@@ -208,7 +222,7 @@
             <section id="tools" class="section-card">
               <div class="grid-layout">
                 <a
-                  v-for="(tool, i) in tools"
+                  v-for="(tool, i) in homeTools"
                   :key="i"
                   :href="tool.url"
                   target="_blank"
@@ -260,7 +274,7 @@
             <section id="projects" class="section-card">
               <div class="grid-layout">
                 <a
-                  v-for="(p, i) in projects"
+                  v-for="(p, i) in homeProjects"
                   :key="i"
                   :href="p.url"
                   target="_blank"
@@ -278,7 +292,7 @@
           </div>
 
           <!-- 审核状态（仅管理员可见）-->
-          <div v-if="user.role === 'admin'" class="section-container">
+          <div v-if="isAdmin" class="section-container">
             <div class="section-header">
               <h2 class="section-title-text text-red">审核状态</h2>
               <a href="#" class="more-btn-small">更多 →</a>
@@ -309,77 +323,51 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import logoImg from '@/assets/logo.png'
 
+const store = useStore()
 const router = useRouter()
 
-const user = ref({
-  isLogin: true,
-  role: 'admin',
-  nickName: '',
-  avatar: ''
+// ========== 从 Vuex Store 获取状态 ==========
+const isLoggedIn = computed(() => store.getters.isLoggedIn)
+const isAdmin = computed(() => store.getters.isAdmin)
+const userInitial = computed(() => store.getters.getUserInitial)
+
+// 首页状态
+const homeActiveSection = computed(() => store.getters.homeActiveSection)
+const isSidebarCollapsed = computed(() => store.getters.isSidebarCollapsed)
+const showAddMenu = computed(() => store.getters.showAddMenu)
+const dropdownOpen = computed(() => store.getters.dropdownOpen)
+const engineMenuOpen = computed(() => store.getters.engineMenuOpen)
+const searchEngine = computed(() => store.getters.searchEngine)
+const searchInput = computed({
+  get: () => store.getters.searchInput,
+  set: (value) => store.commit('setSearchInput', value)
 })
+const today = computed(() => store.getters.today)
+const weekday = computed(() => store.getters.weekday)
+const currentTime = computed(() => store.getters.currentTime)
 
-const activeSection = ref('common')
-const isCollapsed = ref(false)
-const showAddMenu = ref(false)
-const dropdownOpen = ref(false)
-const engineMenuOpen = ref(false)
+// 首页数据
+const commonSites = computed(() => store.getters.commonSites)
+const homeTools = computed(() => store.getters.homeTools)
+const course = computed(() => store.getters.course)
+const homeProjects = computed(() => store.getters.homeProjects)
+const reviewItems = computed(() => store.getters.reviewItems)
+const visibleSidebarItems = computed(() => store.getters.visibleSidebarItems)
+const engines = computed(() => store.getters.engines)
+const currentEngineName = computed(() => store.getters.currentEngineName)
 
-const searchEngine = ref('https://www.baidu.com/s?wd=')
-const searchInput = ref('')
-
-const today = ref('')
-const weekday = ref('')
-const currentTime = ref('')
-const bgUrl = ref('')
-
-const sidebarItems = ref([
-  { id: 'common', name: '常用', icon: 'fa-star' },
-  { id: 'tools', name: '精选工具', icon: 'fa-tools' },
-  { id: 'course', name: '课程浏览', icon: 'fa-book-open' },
-  { id: 'projects', name: '项目情况', icon: 'fa-project-diagram' },
-  { id: 'audit', name: '审核中心', icon: 'fa-gavel', adminOnly: true, route: '/check/audit' },
-  // { id: 'review', name: '审核状态', icon: 'fa-shield-alt', adminOnly: true }
-])
-
-const visibleSidebarItems = computed(() =>
-  sidebarItems.value.filter(item => !item.adminOnly || user.value.role === 'admin')
-)
-
-const userInitial = computed(() => user.value.isLogin ? (user.value.nickName?.[0] || '我') : '访')
-
-function handleNavItem(item) {
-  if (item.route) {
-    router.push(item.route)
-    return
-  }
-  scrollToSection(item.id)
-}
-
-const engines = [
-  { name: '百度', value: 'https://www.baidu.com/s?wd=' },
-  { name: '搜狗', value: 'https://www.sogou.com/web?query=' },
-  { name: 'Google', value: 'https://www.google.com/search?q=' },
-  { name: 'Bing', value: 'https://cn.bing.com/search?q=' },
-  { name: '知乎', value: 'https://www.zhihu.com/search?q=' },
-  { name: '本站', value: '/search?q=' }
-]
-
-const currentEngineName = computed(() => {
-  const engine = engines.find(e => e.value === searchEngine.value)
-  return engine ? engine.name : '百度'
-})
-// ========== 互动背景相关代码 ==========
-
+// ========== 互动背景相关代码（保留在组件内）==========
 const mainWrapper = ref(null)
 const interactiveBg = ref(null)
 const particleRefs = ref([])
 
 // 鼠标状态
-const mousePos = reactive({ x: 0, y: 0 })
+const mousePos = ref({ x: 0, y: 0 })
 const highlightSize = ref(0)
 const highlightOpacity = ref(0)
 const isMouseActive = ref(false)
@@ -387,28 +375,71 @@ const lastMouseMoveTime = ref(Date.now())
 
 // 增强的粒子系统
 const particles = ref([])
-const connections = ref([]) // 连接线
-const mouseTrails = ref([]) // 鼠标轨迹
+const connections = ref([])
+const mouseTrails = ref([])
 const animationId = ref(null)
 const frameCount = ref(0)
 
-// 粒子类型配置 - 增加更多类型和数量
+// 粒子类型配置
 const particleTypes = [
-  { class: 'type-1', baseSize: 8, count: 20, opacity: 0.7, speed: 0.4 }, // 主粒子
-  { class: 'type-2', baseSize: 6, count: 15, opacity: 0.6, speed: 0.3 }, // 次级粒子
-  { class: 'type-3', baseSize: 12, count: 10, opacity: 0.8, speed: 0.5 }, // 大粒子
-  { class: 'type-4', baseSize: 4, count: 25, opacity: 0.4, speed: 0.2 }, // 微粒子
-  { class: 'type-5', baseSize: 10, count: 8, opacity: 0.9, speed: 0.6 } // 特殊粒子
+  { class: 'type-1', baseSize: 8, count: 20, opacity: 0.7, speed: 0.4 },
+  { class: 'type-2', baseSize: 6, count: 15, opacity: 0.6, speed: 0.3 },
+  { class: 'type-3', baseSize: 12, count: 10, opacity: 0.8, speed: 0.5 },
+  { class: 'type-4', baseSize: 4, count: 25, opacity: 0.4, speed: 0.2 },
+  { class: 'type-5', baseSize: 10, count: 8, opacity: 0.9, speed: 0.6 }
 ]
 
+const addMenuOptions = [
+  { name: '我的博客', icon: 'fa-blog' },
+  { name: '音乐', icon: 'fa-music' },
+  { name: 'AI工具', icon: 'fa-robot' },
+  { name: 'ChatGPT', icon: 'fa-brain' }
+]
+
+const isCustomItemAdded = (name, icon) => {
+  return visibleSidebarItems.value.some(item =>
+    item.custom && item.name === name && item.icon === icon
+  )
+}
+
+const getCustomItemId = (name, icon) => {
+  const item = visibleSidebarItems.value.find(item =>
+    item.custom && item.name === name && item.icon === icon
+  )
+  return item ? item.id : null
+}
+
+const handleAddMenuClick = (option) => {
+  const isAlreadyAdded = isCustomItemAdded(option.name, option.icon);
+
+  if (isAlreadyAdded) {
+    // 如果已添加，则移除
+    const itemId = getCustomItemId(option.name, option.icon);
+    if (itemId) {
+      store.dispatch('removeCustomNavigation', itemId);
+      showToast('导航已移除');
+    }
+  } else {
+    // 如果未添加，则添加
+    store.dispatch('addCustomNavigation', {
+      name: option.name,
+      icon: option.icon
+    });
+    showToast('导航已添加');
+  }
+
+  // 关闭菜单
+  store.commit('setHomeMenuState', { menu: 'add', isOpen: false });
+}
+
 // 系统配置
-const systemConfig = reactive({
-  particleCount: 78, // 总粒子数
-  connectionDistance: 150, // 连接线最大距离
-  trailLifetime: 40, // 轨迹点生存时间（帧）
-  maxTrails: 15, // 最大轨迹点数
-  mouseInfluenceRadius: 200, // 鼠标影响半径
-  performanceMode: false // 性能模式
+const systemConfig = ref({
+  particleCount: 78,
+  connectionDistance: 150,
+  trailLifetime: 40,
+  maxTrails: 15,
+  mouseInfluenceRadius: 200,
+  performanceMode: false
 })
 
 // 初始化粒子
@@ -432,8 +463,8 @@ const initParticles = () => {
         waveOffset: Math.random() * Math.PI * 2,
         waveAmplitude: Math.random() * 3 + 1,
         waveSpeed: Math.random() * 0.03 + 0.01,
-        originalX: 0,
-        originalY: 0,
+        originalX: Math.random() * (window.innerWidth || 1200),
+        originalY: Math.random() * (window.innerHeight || 800),
         filter: 'none',
         life: 1
       })
@@ -446,8 +477,14 @@ const updateParticles = () => {
   const time = Date.now() * 0.001
   frameCount.value++
 
-  // 更新每个粒子
-  particles.value.forEach(particle => {
+  // 使用 for 循环而不是 forEach，以便可以安全地跳过不存在的粒子
+  for (let i = 0; i < particles.value.length; i++) {
+    const particle = particles.value[i]
+
+    // 确保粒子对象存在
+    if (!particle) continue
+
+    // 直接使用粒子对象的属性，无需中间变量
     // 波浪运动
     const waveX = Math.sin(time * particle.waveSpeed + particle.waveOffset) * particle.waveAmplitude
     const waveY = Math.cos(time * particle.waveSpeed + particle.waveOffset) * particle.waveAmplitude
@@ -467,12 +504,12 @@ const updateParticles = () => {
 
     // 鼠标互动
     if (isMouseActive.value) {
-      const dx = mousePos.x - particle.x
-      const dy = mousePos.y - particle.y
+      const dx = mousePos.value.x - particle.x
+      const dy = mousePos.value.y - particle.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      if (distance < systemConfig.mouseInfluenceRadius) {
-        const force = 1 - distance / systemConfig.mouseInfluenceRadius
+      if (distance < systemConfig.value.mouseInfluenceRadius) {
+        const force = 1 - distance / systemConfig.value.mouseInfluenceRadius
         const angle = Math.atan2(dy, dx)
 
         // 靠近鼠标
@@ -498,7 +535,7 @@ const updateParticles = () => {
 
     // 轻微的生命周期呼吸效果
     particle.life = 0.7 + Math.sin(time * 0.5 + particle.id) * 0.3
-  })
+  }
 
   // 更新连接线
   updateConnections()
@@ -523,8 +560,8 @@ const updateConnections = () => {
       const dy = p2.y - p1.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      if (distance < systemConfig.connectionDistance && distance > 20) {
-        const opacity = 0.3 * (1 - distance / systemConfig.connectionDistance)
+      if (distance < systemConfig.value.connectionDistance && distance > 20) {
+        const opacity = 0.3 * (1 - distance / systemConfig.value.connectionDistance)
 
         connections.value.push({
           id: connectionId++,
@@ -544,30 +581,45 @@ const updateConnections = () => {
 const updateMouseTrails = () => {
   // 添加新的轨迹点（每3帧添加一个）
   if (frameCount.value % 3 === 0 && isMouseActive.value) {
+    const trailLifetime = systemConfig.value.trailLifetime || 40
+
     mouseTrails.value.push({
       id: Date.now() + Math.random(),
-      x: mousePos.x,
-      y: mousePos.y,
+      x: mousePos.value.x || 0,
+      y: mousePos.value.y || 0,
       size: Math.random() * 6 + 4,
       opacity: 0.5,
-      life: systemConfig.trailLifetime
+      life: trailLifetime // 初始生命周期
     })
 
     // 限制轨迹点数量
-    if (mouseTrails.value.length > systemConfig.maxTrails) {
+    const maxTrails = systemConfig.value.maxTrails || 15
+    if (mouseTrails.value.length > maxTrails) {
       mouseTrails.value.shift()
     }
   }
 
   // 更新现有轨迹点
-  mouseTrails.value.forEach((trail, index) => {
+  const trailLifetime = systemConfig.value.trailLifetime || 40
+
+  // 使用 for 循环而不是 forEach，以便在删除时正确处理索引
+  for (let i = mouseTrails.value.length - 1; i >= 0; i--) {
+    const trail = mouseTrails.value[i]
+
+    if (!trail) continue
+
+    // 确保 life 属性存在
+    if (typeof trail.life === 'undefined') {
+      trail.life = trailLifetime
+    }
+
     trail.life--
-    trail.opacity = trail.life / systemConfig.trailLifetime * 0.5
+    trail.opacity = (trail.life / trailLifetime) * 0.5
 
     if (trail.life <= 0) {
-      mouseTrails.value.splice(index, 1)
+      mouseTrails.value.splice(i, 1)
     }
-  })
+  }
 }
 
 // 动画循环
@@ -601,8 +653,14 @@ const handleMouseMove = (event) => {
   if (!mainWrapper.value) return
 
   const rect = mainWrapper.value.getBoundingClientRect()
-  mousePos.x = event.clientX - rect.left
-  mousePos.y = event.clientY - rect.top
+
+  // 确保 mousePos.value 存在
+  if (!mousePos.value) {
+    mousePos.value = { x: 0, y: 0 }
+  }
+
+  mousePos.value.x = event.clientX - rect.left
+  mousePos.value.y = event.clientY - rect.top
   lastMouseMoveTime.value = Date.now()
   isMouseActive.value = true
 }
@@ -641,139 +699,107 @@ const handleSearchFocus = () => {
   })
 }
 
-// 增强的搜索效果
-const enhancedDoSearch = () => {
-  const q = searchInput.value.trim()
-  if (q) {
-    // 粒子爆炸效果
-    particles.value.forEach(particle => {
-      const dx = particle.x - mousePos.x
-      const dy = particle.y - mousePos.y
-      const distance = Math.sqrt(dx * dy)
-      const force = 1 / (distance / 100 + 1)
-
-      particle.speedX += (dx / distance) * force * 5 || 0
-      particle.speedY += (dy / distance) * force * 5 || 0
-
-      // 恢复速度
-      setTimeout(() => {
-        particle.speedX *= 0.8
-        particle.speedY *= 0.8
-      }, 500)
-    })
-
-    window.open(searchEngine.value + encodeURIComponent(q), '_blank')
-    searchInput.value = ''
-  }
+// ========== 使用 Vuex Actions 的函数 ==========
+// 侧边栏折叠
+const toggleSidebar = () => {
+  store.commit('setSidebarCollapsed', !isSidebarCollapsed.value)
 }
-// 选择引擎的方法
+
+// 菜单切换
+const toggleAddMenu = () => {
+  store.commit('setHomeMenuState', { menu: 'add', isOpen: !showAddMenu.value })
+}
+
+const toggleDropdown = () => {
+  store.commit('setHomeMenuState', { menu: 'dropdown', isOpen: !dropdownOpen.value })
+}
+
+const toggleEngineMenu = () => {
+  store.commit('setHomeMenuState', { menu: 'engine', isOpen: !engineMenuOpen.value })
+}
+
+// 选择引擎
 const selectEngine = (value) => {
-  searchEngine.value = value
-  engineMenuOpen.value = false
+  store.dispatch('selectSearchEngine', value)
 }
 
-const commonSites = [
-  { name: '微信文件', url: 'https://file.fengfengzhidao.com', icon: 'https://file.fengfengzhidao.com/logo/wechat.png', desc: '快速传输文件到设备' },
-  { name: '和风天气', url: 'https://www.qweather.com', icon: 'https://cdn.heweather.com/img/logo.png', desc: '实时天气预报服务' },
-  { name: '小红书', url: 'https://www.xiaohongshu.com', icon: 'https://ci.xiaohongshu.com/logo_2023.png', desc: '生活方式分享社区' },
-  { name: '哔哩哔哩', url: 'https://www.bilibili.com', icon: 'https://www.bilibili.com/favicon.ico', desc: '视频弹幕网站' },
-  { name: '知乎', url: 'https://www.zhihu.com', icon: 'https://static.zhihu.com/static/favicon.ico', desc: '高质量问答平台' },
-  { name: '百度翻译', url: 'https://fanyi.baidu.com', icon: 'https://fanyi.bdstatic.com/static/translation/img/favicon.ico', desc: '多语言翻译工具' },
-  { name: '淘宝', url: 'https://www.taobao.com', icon: 'https://www.taobao.com/favicon.ico', desc: '在线购物平台' },
-  { name: '抖音', url: 'https://www.douyin.com', icon: 'https://lf1-cdn2-tos.bytego.com/obj/ies-fe-bee-prod/cn/fe/bee_prod_cn_bee_home_page_logo.png', desc: '短视频分享应用' },
-  { name: '京东', url: 'https://www.jd.com', icon: 'https://www.jd.com/favicon.ico', desc: '电商购物网站' },
-  { name: '微博', url: 'https://www.weibo.com', icon: 'https://weibo.com/favicon.ico', desc: '社交媒体平台' }
-]
+// 执行搜索
+const doSearch = () => {
+  store.dispatch('doSearch')
 
-const tools = [
-  { name: 'DeepL', url: 'https://www.deepl.com', icon: 'https://www.deepl.com/img/logo/deepl-logo-blue.svg', desc: '高精度翻译工具' },
-  { name: 'SmallPDF', url: 'https://smallpdf.com', icon: 'https://smallpdf.com/images/favicon.png', desc: 'PDF 处理在线工具' },
-  { name: 'Canvas', url: 'https://www.canva.com', icon: 'https://static.canva.com/static/images/favicon-96x96.png', desc: '在线设计平台' },
-  { name: 'Figma', url: 'https://www.figma.com', icon: 'https://static.figma.com/uploads/logo.png', desc: 'UI/UX 设计工具' },
-  { name: 'GitHub', url: 'https://github.com', icon: 'https://github.githubassets.com/favicons/favicon.png', desc: '代码托管平台' },
-  { name: 'Excalibur', url: 'https://excalidraw.com', icon: 'https://excalidraw.com/favicon.ico', desc: '手绘风格绘图' },
-  { name: 'ProcessOn', url: 'https://www.processon.com', icon: 'https://www.processon.com/favicon.ico', desc: '在线流程图工具' },
-  { name: 'Wormhole', url: 'https://wormhole.app', icon: 'https://wormhole.app/favicon.ico', desc: '安全文件共享' },
-  { name: 'PhotoKit', url: 'https://www.photokit.com', icon: 'https://www.photokit.com/favicon.ico', desc: '在线照片编辑' },
-  { name: 'VirScan', url: 'https://www.virscan.org', icon: 'https://www.virscan.org/favicon.ico', desc: '病毒扫描工具' }
-]
+  // 搜索后的粒子效果
+  particles.value.forEach((p, index) => {
+    if (!p || !mousePos.value) return
 
-const course = [
-  { name: '慕课网', url: 'https://www.imooc.com', icon: 'https://www.imooc.com/favicon.ico', desc: 'IT技能学习平台' },
-  { name: 'B站课堂', url: 'https://www.bilibili.com/cheese', icon: 'https://www.bilibili.com/favicon.ico', desc: '视频课程学习' },
-  { name: 'Coursera', url: 'https://www.coursera.org', icon: 'https://www.coursera.org/favicon.ico', desc: '在线大学课程' },
-  { name: '网易云课堂', url: 'https://study.163.com', icon: 'https://study.163.com/favicon.ico', desc: '职业技能培训' },
-  { name: '腾讯课堂', url: 'https://ke.qq.com', icon: 'https://ke.qq.com/favicon.ico', desc: '在线教育平台' },
-  { name: '极客时间', url: 'https://time.geekbang.org', icon: 'https://time.geekbang.org/favicon.ico', desc: '技术学习社区' },
-  { name: '实验楼', url: 'https://www.shiyanlou.com', icon: 'https://www.shiyanlou.com/favicon.ico', desc: '在线编程实验' },
-  { name: '菜鸟教程', url: 'https://www.runoob.com', icon: 'https://www.runoob.com/favicon.ico', desc: '编程语言教程' },
-  { name: 'MDN', url: 'https://developer.mozilla.org', icon: 'https://developer.mozilla.org/favicon.ico', desc: 'Web开发文档' },
-  { name: 'W3School', url: 'https://www.w3school.com.cn', icon: 'https://www.w3school.com.cn/favicon.ico', desc: 'Web技术教程' }
-]
+    // 解构现有属性，使用默认值
+    const {
+      x = 0,
+      y = 0,
+      speedX = 0,
+      speedY = 0
+    } = p || {}
 
-const projects = [
-  { name: '项目管理', url: '/admin/projects', icon: 'https://fakeicon.com/project.svg', desc: '管理所有项目' },
-  { name: '任务看板', url: '/kanban', icon: 'https://fakeicon.com/kanban.svg', desc: '可视化任务跟踪' },
-  { name: '代码仓库', url: '/repo', icon: 'https://fakeicon.com/repo.svg', desc: '代码存储与协作' },
-  { name: '文档中心', url: '/docs', icon: 'https://fakeicon.com/docs.svg', desc: '项目文档库' },
-  { name: '统计报表', url: '/report', icon: 'https://fakeicon.com/chart.svg', desc: '数据分析报告' },
-  { name: '成员管理', url: '/members', icon: 'https://fakeicon.com/team.svg', desc: '团队成员设置' },
-  { name: '文件共享', url: '/files', icon: 'https://fakeicon.com/folder.svg', desc: '安全文件交换' },
-  { name: '会议记录', url: '/meeting', icon: 'https://fakeicon.com/note.svg', desc: '会议纪要管理' },
-  { name: '反馈收集', url: '/feedback', icon: 'https://fakeicon.com/message.svg', desc: '用户反馈系统' },
-  { name: '设置', url: '/settings', icon: 'https://fakeicon.com/setting.svg', desc: '项目配置中心' }
-]
+    const dx = x - (mousePos.value.x || 0)
+    const dy = y - (mousePos.value.y || 0)
+    const distance = Math.sqrt(dx * dx + dy * dy)
 
-const reviewItems = [
-  { name: '待审用户', url: '/admin/review/users', icon: 'https://fakeicon.com/review-user.svg', desc: '审核新注册用户' },
-  { name: '内容审核', url: '/admin/review/content', icon: 'https://fakeicon.com/review-content.svg', desc: '检查用户上传内容' },
-  { name: '举报处理', url: '/admin/review/reports', icon: 'https://fakeicon.com/report.svg', desc: '处理用户举报' },
-  { name: '敏感词库', url: '/admin/review/words', icon: 'https://fakeicon.com/filter.svg', desc: '管理敏感词汇' },
-  { name: '日志审计', url: '/admin/review/logs', icon: 'https://fakeicon.com/log.svg', desc: '查看系统日志' },
-  { name: '封禁列表', url: '/admin/review/ban', icon: 'https://fakeicon.com/ban.svg', desc: '管理封禁用户' },
-  { name: '权限调整', url: '/admin/review/roles', icon: 'https://fakeicon.com/role.svg', desc: '调整用户权限' },
-  { name: '系统通知', url: '/admin/review/notice', icon: 'https://fakeicon.com/notice.svg', desc: '发送系统公告' },
-  { name: '备份恢复', url: '/admin/review/backup', icon: 'https://fakeicon.com/backup.svg', desc: '数据备份与恢复' },
-  { name: '安全中心', url: '/admin/review/security', icon: 'https://fakeicon.com/shield.svg', desc: '系统安全设置' }
-]
+    if (distance === 0) return // 避免除以零
 
-const updateTime = () => {
-  const d = new Date()
-  today.value = d.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
-  weekday.value = d.toLocaleDateString('zh-CN', { weekday: 'long' })
-  currentTime.value = d.toTimeString().slice(0, 8)
+    const force = 1 / (distance / 100 + 1)
+
+    // 更新粒子对象的属性
+    const newSpeedX = speedX + (dx / distance) * force * 5
+    const newSpeedY = speedY + (dy / distance) * force * 5
+
+    // 更新原对象
+    particles.value[index].speedX = newSpeedX
+    particles.value[index].speedY = newSpeedY
+
+    // 恢复速度
+    setTimeout(() => {
+      particles.value[index].speedX *= 0.8
+      particles.value[index].speedY *= 0.8
+    }, 500)
+  })
 }
 
-const scrollToSection = (id) => {
-  activeSection.value = id
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+// 处理导航项点击
+const handleNavItem = (item) => {
+  store.dispatch('handleNavItem', { item, router })
 }
 
-const doSearch = enhancedDoSearch
-
-const addCustom = (name, icon) => {
-  sidebarItems.value.push({ id: `custom-${Date.now()}`, name, icon, custom: true })
-  showAddMenu.value = false
+const showToast = (message) => {
+  // 这里可以添加您的toast提示逻辑
+  console.log(message)
 }
 
+// 关闭所有菜单
 const closeMenus = (e) => {
   if (!e.target.closest('.avatar-btn') &&
     !e.target.closest('.add-item') &&
     !e.target.closest('.engine-wrapper')) {
-    dropdownOpen.value = false
-    showAddMenu.value = false
-    engineMenuOpen.value = false
+    store.dispatch('closeAllMenus')
   }
 }
+
+watch([showAddMenu, dropdownOpen, engineMenuOpen], ([addOpen, dropdownOpenVal, engineOpen]) => {
+  // 如果其他菜单打开，关闭添加菜单
+  if (!addOpen && (dropdownOpenVal || engineOpen)) {
+    // 什么都不做，让其他菜单保持打开
+  }
+})
 
 onMounted(async () => {
   // 等待DOM完全加载
   await nextTick()
 
-  // 初始化原有功能
-  updateTime()
-  const timer = setInterval(updateTime, 1000)
-  bgUrl.value = `https://api.dujin.org/bing/1920.php?t=${Date.now()}`
+  // 初始化时间
+  await store.dispatch('updateTime')
+  const timer = setInterval(() => store.dispatch('updateTime'), 1000)
+
+  // 初始化认证状态
+  await store.dispatch('initAuth')
+
   document.addEventListener('click', closeMenus)
 
   // 初始化增强的粒子系统
@@ -782,20 +808,17 @@ onMounted(async () => {
   // 确保容器存在
   if (mainWrapper.value && interactiveBg.value) {
     // 初始化鼠标位置
-    mousePos.x = window.innerWidth / 2
-    mousePos.y = window.innerHeight / 2
+    if (!mousePos.value) {
+      mousePos.value = { x: 0, y: 0 }
+    }
+    mousePos.value.x = window.innerWidth / 2
+    mousePos.value.y = window.innerHeight / 2
 
     // 开始动画
     animate()
 
     // 添加事件监听
     window.addEventListener('resize', handleResize)
-
-    // 为搜索框添加事件
-    const searchInputEl = document.querySelector('.search-input')
-    if (searchInputEl) {
-      searchInputEl.addEventListener('focus', handleSearchFocus)
-    }
   }
 
   // 清理函数
@@ -809,11 +832,6 @@ onMounted(async () => {
     }
 
     window.removeEventListener('resize', handleResize)
-
-    const searchInputEl = document.querySelector('.search-input')
-    if (searchInputEl) {
-      searchInputEl.removeEventListener('focus', handleSearchFocus)
-    }
   })
 })
 </script>
