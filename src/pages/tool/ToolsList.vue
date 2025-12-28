@@ -454,7 +454,7 @@ const goToDetail = async (id) => {
     params: { id }
   })
   // 使用 Vuex action
-  await store.dispatch('addToolView', id)
+  // await store.dispatch('addToolView', id)
 }
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
 // 10. 进入登录页面
@@ -513,6 +513,14 @@ watch(() => route.query, (newQuery) => {
 // 五、生命周期函数
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
+
+  // 没有数据时需要加载数据
+  if (toolsList.value.length === 0) {
+    store.dispatch('fetchTools')
+  }
+
+  // 启用工具提交按钮
+  store.commit('setDisableToolSubmit', false)
 })
 
 onUnmounted(() => {

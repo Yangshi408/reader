@@ -2,7 +2,7 @@
 import { createStore } from 'vuex'
 import { HttpManager } from '@/api'
 import { mockProjects } from '@/data/project/mockData'
-import { mockData } from '@/data/tool/mockData'
+import { mockTools } from '@/data/tool/mockData'
 import { predefinedTags } from '@/data/tool/tags'
 
 export default createStore({
@@ -58,9 +58,11 @@ export default createStore({
         sort: '最多浏览'
       },
       currentToolDetail: null,
-      disableToolSubmit: false,
+      disableToolSubmit: true,
+      showBackButton: false,  // 新增：专门控制返回按钮显示
       // 从 toolsStore.js 添加的额外状态
-      isAuthenticated: !!localStorage.getItem('token'), // 直接从 localStorage 检查 token
+      // isAuthenticated: !!localStorage.getItem('token'), // 直接从 localStorage 检查 token
+      isAuthenticated: true, // 模拟时使用，后续需要删除
       tagsByCategory: {} // 缓存标签分组数据
     }
   },
@@ -186,6 +188,10 @@ export default createStore({
 
     setDisableToolSubmit(state, disabled) {
       state.tools.disableToolSubmit = disabled
+    },
+
+    setShowBackButton(state, show) {
+      state.tools.showBackButton = show
     },
 
     updateToolField(state, { toolId, field, value }) {
@@ -553,9 +559,9 @@ export default createStore({
       try {
         if (useMock) {
           await new Promise(resolve => setTimeout(resolve, 500))
-          commit('setToolsList', mockData)
-          commit('setToolsCategories', [...new Set(mockData.map(t => t.category))])
-          commit('setToolsPagination', { total: mockData.length })
+          commit('setToolsList', mockTools)
+          commit('setToolsCategories', [...new Set(mockTools.map(t => t.category))])
+          commit('setToolsPagination', { total: mockTools.length })
 
           // 初始化标签分组数据
           const filterTags = (ids) => predefinedTags?.filter(tag => ids.includes(tag.id)) || []
@@ -601,8 +607,8 @@ export default createStore({
         }
       } catch (error) {
         console.error('获取工具列表失败:', error)
-        commit('setToolsList', mockData)
-        commit('setToolsCategories', [...new Set(mockData.map(t => t.category))])
+        commit('setToolsList', mockTools)
+        commit('setToolsCategories', [...new Set(mockTools.map(t => t.category))])
 
         // 初始化标签分组数据
         const filterTags = (ids) => predefinedTags?.filter(tag => ids.includes(tag.id)) || []
@@ -667,7 +673,7 @@ export default createStore({
         return state.tools.toolsList.find(t => t.id === parseInt(toolId)) || null
       } catch (error) {
         console.error('获取工具详情失败:', error)
-        return state.tools.toolsList.find(t => t.id === parseInt(toolId)) || null
+        return mockTools.find(t => t.id === parseInt(toolId)) || null
       }
     },
 

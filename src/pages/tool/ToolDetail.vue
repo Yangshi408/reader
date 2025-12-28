@@ -431,6 +431,9 @@ const loadToolDetail = async (id) => {
 
     tool.value = data
     isLoading.value = false
+
+    // 核心数据加载完成后，显示返回按钮并启用工具提交按钮
+    store.commit('setShowBackButton', true)
     store.commit('setDisableToolSubmit', false)
 
     // 非核心数据后台加载
@@ -441,6 +444,13 @@ const loadToolDetail = async (id) => {
   } catch (error) {
     if (!isComponentMounted.value) return
     console.error('加载核心数据失败:', error)
+    // 即使加载失败，也显示返回按钮（让用户可以返回）
+    store.commit('setShowBackButton', true)
+  } finally {
+    // 确保加载状态正确
+    if (isComponentMounted.value && isLoading.value) {
+      isLoading.value = false
+    }
   }
 }
 // 6. 获取评论
@@ -670,10 +680,10 @@ const formatTime = (timeString) => {
 
 // 四、生命周期函数
 // 1. 组件加载时加载数据
-onMounted(async () => {
+onMounted(() => {
   isComponentMounted.value = true
   const id = route.params.id
-  await loadToolDetail(id)
+  loadToolDetail(id)
 })
 // 2. 组件卸载时标记
 onUnmounted(() => {
