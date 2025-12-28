@@ -513,6 +513,7 @@ watch(() => route.query, (newQuery) => {
 // 五、生命周期函数
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
+  console.log('工具列表页面已挂载')
 
   // 没有数据时需要加载数据
   if (toolsList.value.length === 0) {

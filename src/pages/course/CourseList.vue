@@ -60,73 +60,207 @@
         </div>
       </div>
 
-      <!-- 用户菜单 -->
-      <div class="relative" ref="avatarRef">
+      <div class="flex items-center gap-6">
+        <!-- 筛选按钮 -->
+        <div class="relative" ref="filterRef">
+          <button @click="showFilter = !showFilter"
+                  class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+            <i class="fas fa-sliders-h"></i> 筛选
+          </button>
+          <div v-if="showFilter" class="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in max-h-[70vh] overflow-y-auto">
 
-        <!-- 头像按钮 -->
-        <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
-
-          <!-- 情况 1: 已登录 且 有头像图片 -->
-          <template v-if="isAuthenticated && userInfo?.avatar">
-            <img
-              :src="userInfo.avatar"
-              class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
-              alt="User Avatar"
-            >
-            <!-- 在线状态绿点 -->
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-          </template>
-
-          <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
-          <template v-else-if="isAuthenticated">
-            <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
-              {{ userInitial }}
+            <!-- 排序方式 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
+              <div class="flex gap-2">
+                <button v-for="sort in ['默认', '最多点赞', '最多资料', '学分最高']" :key="sort" @click="toggleSort(sort)"
+                        :class="['px-3 py-1 rounded-md text-sm border', activeFilters.sort === sort ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-200']">
+                  {{ sort }}
+                </button>
+              </div>
             </div>
-            <!-- 在线状态绿点 -->
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-          </template>
 
-          <!-- 情况 3: 游客 (显示 "游") -->
-          <template v-else>
-            <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
-              {{ userInitial }}
+            <!-- 学期筛选 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                学期筛选
+                <button
+                  @click="clearSemesterFilter"
+                  v-if="activeFilters.semesters.length > 0"
+                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  清除
+                </button>
+              </h4>
+              <div class="flex flex-wrap gap-2">
+          <span
+            v-for="semester in semesterOptions"
+            :key="semester.key"
+            @click="toggleSemester(semester.key)"
+            :class="[
+              'cursor-pointer px-3 py-1.5 rounded-lg text-xs transition-all duration-200',
+              'border flex items-center gap-1',
+              activeFilters.semesters.indexOf(semester.key)!== -1
+                ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm font-medium'
+                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+            ]"
+          >
+            {{ semester.name }}
+            <i
+              v-if="activeFilters.semesters.indexOf(semester.key)!==-1"
+              class="fas fa-check text-xs"
+            ></i>
+          </span>
+              </div>
             </div>
-          </template>
 
+            <!-- 课程类型筛选 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                课程类型
+                <button
+                  @click="clearTypeFilter"
+                  v-if="activeFilters.types.length > 0 && activeFilters.types.length < courseTypes.length - 1"
+                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  清除
+                </button>
+              </h4>
+              <div class="flex flex-wrap gap-2">
+          <span
+            v-for="type in courseTypes.filter(t => t !== '全部')"
+            :key="type"
+            @click="toggleType(type)"
+            :class="[
+              'cursor-pointer px-3 py-1.5 rounded-lg text-xs transition-all duration-200',
+              'border flex items-center gap-1',
+              activeFilters.types.indexOf(type)!==-1
+                ? getTypeClass(type)
+                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+            ]"
+          >
+            {{ type }}
+            <i
+              v-if="activeFilters.types.indexOf(type)!==-1"
+              class="fas fa-check text-xs"
+            ></i>
+          </span>
+              </div>
+            </div>
+
+            <!-- 教师筛选 -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                教师筛选
+                <button
+                  @click="clearTeacherFilter"
+                  v-if="teacherFilterSearch"
+                  class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                >
+                  清除
+                </button>
+              </h4>
+              <div class="mb-3">
+                <input
+                  v-model="teacherFilterSearch"
+                  type="text"
+                  placeholder="输入教师姓名..."
+                  class="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  @input="handleTeacherFilter"
+                />
+              </div>
+              <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+          <span
+            v-for="teacher in filteredTeachers"
+            :key="teacher"
+            @click="toggleTeacher(teacher)"
+            :class="[
+              'cursor-pointer px-2 py-1 rounded text-xs transition-all duration-200',
+              'border',
+              activeFilters.teachers.indexOf(teacher)!==-1
+                ? 'bg-purple-50 text-purple-600 border-purple-200'
+                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+            ]"
+          >
+            {{ teacher }}
+            <i
+              v-if="activeFilters.teachers.indexOf(teacher)!==-1"
+              class="fas fa-check ml-1 text-xs"
+            ></i>
+          </span>
+              </div>
+            </div>
+
+          </div>
         </div>
+        <!-- 用户菜单 -->
+        <div class="relative" ref="avatarRef">
 
-        <!-- 下拉菜单 -->
-        <div v-if="showUserMenu"
-             class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
+          <!-- 头像按钮 -->
+          <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
 
-          <!-- 已登录菜单内容 -->
-          <template v-if="isAuthenticated">
-            <div class="px-4 py-3 border-b border-gray-50">
-              <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
-              <p class="text-xs text-gray-400 truncate">已登录</p>
-            </div>
-            <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-              <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
-            </router-link>
-            <div class="h-px bg-gray-100 my-1"></div>
-            <p @click="handleLogout" class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors">
-              <i class="fas fa-sign-out-alt mr-2"></i>退出登录
-            </p>
-          </template>
+            <!-- 情况 1: 已登录 且 有头像图片 -->
+            <template v-if="isAuthenticated && userInfo?.avatar">
+              <img
+                :src="userInfo.avatar"
+                class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
+                alt="User Avatar"
+              >
+              <!-- 在线状态绿点 -->
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
 
-          <!-- 游客菜单内容 -->
-          <template v-else>
-            <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
-              当前身份：游客
-            </div>
-            <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-              <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
-            </router-link>
-            <div class="h-px bg-gray-100 my-1"></div>
-            <div @click="goToLogin" class="block px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium cursor-pointer transition-colors">
-              <i class="fas fa-sign-in-alt mr-2"></i>返回登录
-            </div>
-          </template>
+            <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
+            <template v-else-if="isAuthenticated">
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
+                {{ userInitial }}
+              </div>
+              <!-- 在线状态绿点 -->
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </template>
+
+            <!-- 情况 3: 游客 (显示 "游") -->
+            <template v-else>
+              <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
+                {{ userInitial }}
+              </div>
+            </template>
+
+          </div>
+
+          <!-- 下拉菜单 -->
+          <div v-if="showUserMenu"
+               class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
+
+            <!-- 已登录菜单内容 -->
+            <template v-if="isAuthenticated">
+              <div class="px-4 py-3 border-b border-gray-50">
+                <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
+                <p class="text-xs text-gray-400 truncate">已登录</p>
+              </div>
+              <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+              </router-link>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <p @click="handleLogout" class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+              </p>
+            </template>
+
+            <!-- 游客菜单内容 -->
+            <template v-else>
+              <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
+                当前身份：游客
+              </div>
+              <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
+              </router-link>
+              <div class="h-px bg-gray-100 my-1"></div>
+              <div @click="goToLogin" class="block px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium cursor-pointer transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>返回登录
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </header>
@@ -273,6 +407,154 @@ const isSearching = ref(false)
 const hasSearched = ref(false)
 const engineMenuOpen = ref(false)
 const engineRef = ref(null)
+const showFilter = ref(false)
+const filterRef = ref(null)
+const teacherFilterSearch = ref('')
+const allTeachers = computed(() => [...new Set(mockCourses.map(c => c.teacher))])
+const activeType = ref('全部')
+const courseTypes = ['全部', '公必', '专必', '专选', '公选']
+const showUserMenu = ref(false)
+const avatarRef = ref(null)
+
+const activeFilters = ref({
+  sort: '默认', // 默认排序
+  semesters: [], // 选中学期
+  types: [], // 选中类型
+  teachers: [] // 选中教师
+})
+
+// 计算属性：根据类型获取对应的样式
+const getTypeClass = (type) => {
+  const config = getColorConfig(type)
+  return `bg-[${config.bg}] text-[${config.text}] border-[${config.border}]`
+}
+
+// 计算属性：过滤后的教师列表
+const filteredTeachers = computed(() => {
+  if (!teacherFilterSearch.value) return allTeachers.value.slice(0, 8) // 默认显示前8个
+  return allTeachers.value.filter(teacher =>
+    teacher.toLowerCase().includes(String(teacherFilterSearch.value || '').toLowerCase())
+  )
+})
+
+// 切换排序
+const toggleSort = (sort) => {
+  activeFilters.value.sort = activeFilters.value.sort === sort ? '默认' : sort
+}
+
+// 切换学期
+const toggleSemester = (semesterKey) => {
+  const index = activeFilters.value.semesters.indexOf(semesterKey)
+  if (index > -1) {
+    activeFilters.value.semesters.splice(index, 1)
+  } else {
+    activeFilters.value.semesters.push(semesterKey)
+  }
+}
+
+// 清除学期筛选
+const clearSemesterFilter = () => {
+  activeFilters.value.semesters = []
+}
+
+// 切换课程类型
+const toggleType = (type) => {
+  const index = activeFilters.value.types.indexOf(type)
+  if (index > -1) {
+    activeFilters.value.types.splice(index, 1)
+  } else {
+    activeFilters.value.types.push(type)
+  }
+}
+
+// 清除类型筛选
+const clearTypeFilter = () => {
+  activeFilters.value.types = []
+}
+
+// 切换教师
+const toggleTeacher = (teacher) => {
+  const index = activeFilters.value.teachers.indexOf(teacher)
+  if (index > -1) {
+    activeFilters.value.teachers.splice(index, 1)
+  } else {
+    activeFilters.value.teachers.push(teacher)
+  }
+}
+
+// 清除教师筛选
+const clearTeacherFilter = () => {
+  teacherFilterSearch.value = ''
+  activeFilters.value.teachers = []
+}
+
+// 处理教师筛选输入
+const handleTeacherFilter = () => {
+  // 可以添加防抖逻辑
+}
+
+// 重置所有筛选
+const resetAllFilters = () => {
+  activeFilters.value = {
+    sort: '默认',
+    semesters: [],
+    types: [],
+    teachers: []
+  }
+  teacherFilterSearch.value = ''
+}
+
+// --- 修改原有的 filteredList 计算属性 ---
+const filteredList = computed(() => {
+  return mockCourses.filter((course) => {
+    // 1. 关键词搜索
+    const keyword = String(searchInput.value || '').toLowerCase()
+    const matchKeyword = (searchEngine.value === 'local' && keyword)
+      ? (course.name.toLowerCase().includes(keyword) || course.teacher.includes(keyword))
+      : true
+
+    // 2. 课程类型筛选（与顶部的 activeType 保持一致）
+    const matchType = activeType.value === '全部' || course.type === activeType.value
+
+    // 3. 学期筛选
+    const matchSemester = activeFilters.value.semesters.length === 0 ||
+      activeFilters.value.semesters.indexOf(course.semester)!==-1
+
+    // 4. 课程类型筛选（从筛选面板）
+    const matchFilterType = activeFilters.value.types.length === 0 ||
+      activeFilters.value.types.indexOf(course.type)!==-1
+
+    // 5. 教师筛选
+    const matchTeacher = activeFilters.value.teachers.length === 0 ||
+      activeFilters.value.teachers.indexOf(course.teacher)!==-1
+
+    return matchKeyword && matchType && matchSemester && matchFilterType && matchTeacher
+  }).sort((a, b) => {
+    // 排序逻辑
+    switch (activeFilters.value.sort) {
+      case '最多点赞':
+        return b.likes - a.likes
+      case '最多资料':
+        return b.resources - a.resources
+      case '学分最高':
+        return b.credit - a.credit
+      case '默认':
+      default: {
+        const semCompare = a.semester.localeCompare(b.semester)
+        if (semCompare !== 0) return semCompare
+        return a.code.localeCompare(b.code)
+      }
+    }
+  })
+})
+
+// --- 添加重置筛选方法（替换原有的 resetFilter）---
+const resetFilter = () => {
+  searchInput.value = ''
+  hasSearched.value = false
+  activeType.value = '全部'
+  resetAllFilters()
+}
 
 // 搜索引擎定义
 const engines = [
@@ -360,17 +642,6 @@ const clearSearch = () => {
 }
 
 // --- 3. 课程列表与筛选 ---
-const activeType = ref('全部')
-const courseTypes = ['全部', '公必', '专必', '专选', '公选']
-const showUserMenu = ref(false)
-const avatarRef = ref(null)
-
-const resetFilter = () => {
-  searchInput.value = ''
-  hasSearched.value = false
-  activeType.value = '全部'
-}
-
 const goToDetail = (courseId) => {
   router.push({ name: 'CourseDetail', params: { id: courseId } })
 }
@@ -397,6 +668,10 @@ const closeDropdowns = (e) => {
   if (engineRef.value && !engineRef.value.contains(e.target)) {
     engineMenuOpen.value = false
   }
+  // 新增：关闭筛选菜单
+  if (filterRef.value && !filterRef.value.contains(e.target)) {
+    showFilter.value = false
+  }
 }
 
 // --- 4. Mock 数据与分组 ---
@@ -413,6 +688,18 @@ const semesterMap = {
   '1-1': '大一上', '1-2': '大一下', '2-1': '大二上', '2-2': '大二下',
   '3-1': '大三上', '3-2': '大三下', '4-1': '大四上', '4-2': '大四下'
 }
+
+const semesterOptions = [
+  { key: '1-1', name: '大一上' },
+  { key: '1-2', name: '大一下' },
+  { key: '2-1', name: '大二上' },
+  { key: '2-2', name: '大二下' },
+  { key: '3-1', name: '大三上' },
+  { key: '3-2', name: '大三下' },
+  { key: '4-1', name: '大四上' },
+  { key: '4-2', name: '大四下' }
+]
+
 const reverseSemesterMap = Object.entries(semesterMap).reduce((acc, [k, v]) => { acc[v] = k; return acc }, {})
 
 const mockCourses = [
@@ -435,20 +722,6 @@ const mockCourses = [
   { id: 701, name: '人工智能导论', code: 'CS4001', semester: '4-1', type: '专选', teacher: '林老师', credit: 2.0, resources: 15, likes: 90 },
   { id: 702, name: '毕业设计', code: 'CS4002', semester: '4-2', type: '专必', teacher: '何老师', credit: 6.0, resources: 10, likes: 50 }
 ]
-
-// 计算属性：过滤逻辑
-const filteredList = computed(() => {
-  return mockCourses.filter((course) => {
-    const keyword = String(searchInput.value || '').toLowerCase()
-    // 只有在是本站搜索且有输入时，才进行关键词过滤
-    const matchKeyword = (searchEngine.value === 'local' && keyword)
-      ? (course.name.toLowerCase().includes(keyword) || course.teacher.includes(keyword))
-      : true // 如果不是本站搜索或无输入，则不过滤关键词
-
-    const matchType = activeType.value === '全部' || course.type === activeType.value
-    return matchKeyword && matchType
-  })
-})
 
 const groupedCourses = computed(() => {
   const order = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2']

@@ -628,7 +628,6 @@ const handleLikeComment = async (commentId) => {
 // 10. 检查是否可删除评论
 const checkCanDelete = (comment) => {
   if (!isAuthenticated.value) return false
-  console.log('检查删除权限:', comment, user.value)
   return comment.canDelete
 }
 
