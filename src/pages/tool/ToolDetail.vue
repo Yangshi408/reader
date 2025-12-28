@@ -25,7 +25,7 @@
         <!-- 贡献者 -->
         <div
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="userInfo.avatar || '/default-avatar.png'" class="w-5 h-5 rounded-full">
+          <img :src="userInfo.avatar || '/default-avatar.png'" alt="用户头像" class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">Admin</span>
         </div>
       </div>
@@ -253,22 +253,24 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useToolsStore } from '@/store/toolsStore'
-import { ElMessage } from 'element-plus'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { HttpManager } from '@/api'
-import { storeToRefs } from 'pinia'
 import { predefinedTags } from '@/data/tool/tags'
 import { addMockComment, deleteMockComment, getCommentsByToolId, toggleLikeMockComment } from '@/data/tool/mockData'
-import ToolDetailSkeleton from '../../components/DetailSkeleton.vue'
+import ToolDetailSkeleton from './ToolDetailSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()
-const toolsStore = useToolsStore()
+const store = useStore()  // 替换 toolsStore
 
-const {
-  userInfo,
-  isAuthenticated
-} = storeToRefs(toolsStore)
+// eslint-disable-next-line no-unused-vars
+const { userInfo, tools } = computed(() => ({
+  userInfo: store.state.user,
+  tools: store.state.tools
+})).value
+
+const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
 // 一、变量声明
 // 1. 工具详情相关变量
@@ -418,18 +420,20 @@ const mockToggleToolCollection = async (resourceId, resourceType) => {
 // 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
   isLoading.value = true
-  toolsStore.setToolSubmitDisabled(true) // 禁用工具提交按钮（主要是组件过渡动画和组件创建相互冲突，导致工具提交页组件未被创建。onMounted使用异步函数是导火索）
+  // 使用 Vuex mutation
+  store.commit('setDisableToolSubmit', true)
 
   try {
-    const data = await toolsStore.getToolDetail(id)
-    if (!isComponentMounted.value) return // 检查组件是否已卸载
+    // 使用 Vuex action
+    const data = await store.dispatch('getToolDetail', id)
+    if (!isComponentMounted.value) return
 
     tool.value = data
-    isLoading.value = false // 提前结束加载状态
-    toolsStore.setToolSubmitDisabled(false) // 启用工具提交按钮
+    isLoading.value = false
+    store.commit('setDisableToolSubmit', false)
 
-    // 非核心数据后台加载（不阻塞UI）
-    Promise.allSettled([
+    // 非核心数据后台加载
+    await Promise.allSettled([
       isAuthenticated.value ? checkCollectionStatus(id) : Promise.resolve(),
       fetchComments(id)
     ])
@@ -474,14 +478,14 @@ const fetchComments = async (toolId) => {
 }
 // 7. 发表评论
 const submitComment = async () => {
-  if (!newComment.value.trim()) {
+  if (!(newComment.value || '').trim()) {
     ElMessage.warning('评论内容不能为空')
     return
   }
   submittingComment.value = true
   try {
     const response = await HttpManager.addToolComment(tool.value.id, {
-      content: newComment.value.trim()
+      content: (newComment.value || '').trim()
     })
     if (response.code === 200 && response.data) {
       // 添加新评论到列表
@@ -514,7 +518,7 @@ const submitComment = async () => {
 // 8. 删除评论
 const handleDeleteComment = async (commentId) => {
   try {
-    await ElMessage.confirm('确定要删除这条评论吗？', '提示', {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'

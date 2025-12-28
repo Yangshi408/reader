@@ -89,7 +89,7 @@
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
               <div class="flex gap-2">
-                <button v-for="sort in ['最多浏览', '最多收藏']" :key="sort" @click="toolsStore.toggleSort(sort)"
+                <button v-for="sort in ['最多浏览', '最多收藏']" :key="sort" @click="toggleSort(sort)"
                   :class="['px-3 py-1 rounded-md text-sm border', activeFilters.sort === sort ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-200']">
                   {{ sort }}
                 </button>
@@ -124,7 +124,7 @@
                     <span
                       v-for="tag in tags"
                       :key="tag.id"
-                      @click="toolsStore.toggleTag(tag.id)"
+                      @click="toggleTag(tag.id)"
                       :class="[
                         'cursor-pointer px-2 py-1 rounded text-xs transition-all duration-200',
                         'border flex items-center gap-1',
@@ -267,27 +267,21 @@
 <!-- 修改 ToolsList.vue 的 script 部分 -->
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useToolsStore } from '@/store/toolsStore'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { storeToRefs } from 'pinia'
 
+const store = useStore()  // 替换 useToolsStore
 const router = useRouter()
 const route = useRoute()
-const toolsStore = useToolsStore()
 
 // 使用storeToRefs来保持响应式
-const {
-  // 响应式变量
-  toolsList,
-  categories,
-  userInfo,
-  activeFilters,
-  searchResults,
-  // isLoading,
-  // 计算属性
-  isAuthenticated
-} = storeToRefs(toolsStore)
+const toolsList = computed(() => store.state.tools.toolsList)
+const categories = computed(() => store.state.tools.categories)
+const userInfo = computed(() => store.state.user)
+const activeFilters = computed(() => store.state.tools.activeFilters)
+const searchResults = computed(() => store.state.tools.searchResults)
+const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
 // ==================== 1. 搜索引擎配置 ====================
 const engines = [
@@ -306,10 +300,9 @@ const currentEngineName = computed(() => {
 })
 
 const userInitial = computed(() => {
-  // 1. 游客显示 '游'
   if (!isAuthenticated.value) return '游'
-
-  // 2. 已登录（但没图片的情况）显示 '我'
+  if (userInfo.value?.nickname) return userInfo.value.nickname.charAt(0)
+  if (userInfo.value?.username) return userInfo.value.username.charAt(0)
   return '我'
 })
 
@@ -338,7 +331,7 @@ const TOOLTIP_DELAY = 500
 // 二、计算属性
 // 1. 过滤后的标签
 const filteredTagGroups = computed(() => {
-  const groups = toolsStore.tagsByCategory
+  const groups = store.getters.toolsTagsByCategory
   const searchTerm = tagFilterSearch.value.toLowerCase()
   if (searchTerm) {
     const filtered = {}
@@ -385,20 +378,19 @@ const handleMouseLeave = (toolId) => {
 }
 // 4.处理输入变化，具有防抖功能（防抖功能用于日后扩展）
 const handleSearch = async () => {
-  const query = searchInput.value.trim()
+  const query = (searchInput.value || '').trim()
   if (!query) return
 
-  // A. 外部引擎搜索：直接跳转
   if (searchEngine.value !== 'local') {
     window.open(searchEngine.value + encodeURIComponent(query), '_blank')
-    searchInput.value = '' // 可选：清空输入框
+    searchInput.value = ''
     return
   }
 
-  // B. 本站搜索：执行原有逻辑
   isSearching.value = true
   try {
-    await toolsStore.searchTools(query)
+    // 使用 Vuex action
+    await store.dispatch('searchTools', { query })
     hasSearched.value = true
   } catch (error) {
     ElMessage.error('搜索失败')
@@ -420,7 +412,7 @@ const clearSearch = () => {
 }
 // 6. 清空已选标签
 const clearTagFilters = () => {
-  activeFilters.value.tags = []
+  store.commit('setToolsActiveFilters', { tags: [] })
 }
 // 7. 根据类别获取工具
 const getToolsByCategory = (cat) => {
@@ -457,8 +449,12 @@ const goToDetail = async (id) => {
     tooltipTimers.value[id] = null
   }
   activeToolId.value = null
-  toolsStore.addToolView(id) // 浏览量加1
-  router.push({ name: 'ToolDetail', params: { id } })
+  // 使用 Vuex action
+  await store.dispatch('addToolView', id)
+  await router.push({
+    name: 'ToolDetail',
+    params: { id }
+  })
 }
 // ***********************************需要修改：将当前页面的路径当作参数传递，使得登录成功后可以跳转回当前页面
 // 10. 进入登录页面
@@ -468,19 +464,32 @@ const goToLogin = () => {
 // 11. 退出登录
 const handleLogout = async () => {
   try {
-    await toolsStore.logout()
+    // 使用 Vuex action
+    await store.dispatch('logout')
     showUserMenu.value = false
     ElMessage.success('已退出登录')
   } catch (error) {
     ElMessage.error('退出登录失败')
   }
 }
+
 const closeDropdowns = (e) => {
   if (filterRef.value && !filterRef.value.contains(e.target)) showFilter.value = false
   if (avatarRef.value && !avatarRef.value.contains(e.target)) showUserMenu.value = false
   // 新增：关闭引擎菜单
   if (engineRef.value && !engineRef.value.contains(e.target)) engineMenuOpen.value = false
 }
+
+const toggleSort = (sort) => {
+  // 使用 Vuex action
+  store.dispatch('toggleSort', { type: 'tools', sort })
+}
+
+const toggleTag = (tagId) => {
+  // 使用 Vuex action
+  store.dispatch('toggleTag', { type: 'tools', tag: tagId })
+}
+
 // 12. 辅助：关闭下拉菜单
 const filterRef = ref(null)
 const avatarRef = ref(null)
@@ -490,13 +499,12 @@ const avatarRef = ref(null)
 watch(() => route.query, (newQuery) => {
   if (newQuery.tagId) {
     const tagId = newQuery.tagId
-    // 清空原始已勾选的标签（“通用”除外），并根据tagId标签进行筛选
     if (!activeFilters.value.tags.includes(tagId)) {
-      toolsStore.clearTags() // 先清空原始标签
-      toolsStore.toggleTag(tagId)
+      // 使用 Vuex action
+      store.dispatch('clearTags', 'tools')
+      store.dispatch('toggleTag', { type: 'tools', tag: tagId })
     }
 
-    // 如果有tagName，可以显示友好的筛选提示
     if (newQuery.tagName) {
       ElMessage.success(`已筛选标签: ${newQuery.tagName}`)
     }

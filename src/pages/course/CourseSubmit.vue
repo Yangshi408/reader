@@ -148,13 +148,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useStore } from 'vuex'  // 添加 Vuex
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
+const store = useStore()  // 添加 Vuex store
 const isSubmitting = ref(false)
+
+const isAuthenticated = computed(() => store.getters.isLoggedIn)
 
 const formData = reactive({
   courseName: '',
@@ -165,6 +169,13 @@ const formData = reactive({
 })
 
 onMounted(() => {
+  // 检查用户是否登录
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录以上传资料')
+    router.push('/login')
+    return
+  }
+
   const { courseName, courseId } = route.query
   if (courseName) {
     formData.courseName = courseName
@@ -183,10 +194,16 @@ const goBack = () => {
 }
 
 const handleSubmit = () => {
+  if (!isAuthenticated.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+
   if (!formData.link) {
     ElMessage.error('请输入资源链接')
     return
   }
+
   isSubmitting.value = true
   setTimeout(() => {
     isSubmitting.value = false

@@ -103,14 +103,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useToolsStore } from '@/store/toolsStore'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
-import { storeToRefs } from 'pinia'
 
-const store = useToolsStore()
-const { categories, disableToolSubmit } = storeToRefs(store)
+const store = useStore()  // 替换 useToolsStore
 const router = useRouter()
 const route = useRoute()
+
+const categories = computed(() => store.state.tools.categories)
+const disableToolSubmit = computed(() => store.state.tools.disableToolSubmit)
 
 // 一、变量声明
 // 侧边栏收起状态
@@ -165,11 +166,11 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleKeyDown)
 
-  // 如果分类数据为空，则获取工具列表（这同时会填充分类）
-  // 这个操作主要是避免用户在工具提交页面或详情页刷新浏览器导致数据丢失（最开始是在ToolsList.vue页面加载时加载数据的，但是会出现上述的问题，故改到整个页面框架中加载数据）
+  // 如果分类数据为空，则获取工具列表
   if (categories.value.length === 0) {
     try {
-      await store.fetchTools({}, true)
+      // 使用 Vuex action
+      await store.dispatch('fetchTools', {}, true)
     } catch (error) {
       console.error('Failed to fetch tools:', error)
     }

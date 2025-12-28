@@ -100,14 +100,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useProjectsStore } from '@/store/projectsStore'
+import { useStore } from 'vuex'
 import { useRouter, useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 
-const store = useProjectsStore()
-const { categories } = storeToRefs(store)
 const router = useRouter()
 const route = useRoute()
+const store = useStore()
 
 // 侧边栏收起状态
 const isCollapsed = ref(false)
@@ -117,20 +115,19 @@ const showBackButton = computed(() => {
   return route.name === 'ProjectDetail' || route.name === 'ProjectSubmit' || route.name !== 'ProjectList'
 })
 
+// 使用 Vuex 的 state 获取分类
+const categories = computed(() => store.state.projects.categories || [])
+
 // 方法
-// 1.业内跳转逻辑
 const handleScrollTo = (id) => {
-  // 如果当前不在列表页，先跳转到列表页
   if (route.name !== 'ProjectList') {
     router.push({ name: 'ProjectList', hash: `#section-${id}` })
   } else {
-    // 已经在列表页，直接滚动
     const el = document.getElementById(`section-${id}`)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
-// 2.返回上一级
 const handleBack = () => {
   if (window.history.length > 1) {
     router.go(-1)
@@ -139,19 +136,18 @@ const handleBack = () => {
   }
 }
 
-// 3. 切换侧边栏状态
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
-  // 保存到localStorage，保存用户偏好
   localStorage.setItem('sidebarCollapsed', isCollapsed.value.toString())
 }
-// 添加键盘快捷键：Ctrl+B 切换侧边栏
+
 const handleKeyDown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
     e.preventDefault()
     toggleSidebar()
   }
 }
+
 // 检查localStorage中的侧边栏状态
 onMounted(async () => {
   const savedState = localStorage.getItem('sidebarCollapsed')
@@ -164,7 +160,7 @@ onMounted(async () => {
   // 如果分类数据为空，则获取项目列表
   if (categories.value.length === 0) {
     try {
-      await store.fetchProjects({}, true)
+      await store.dispatch('fetchProjects', { useMock: true })
     } catch (error) {
       console.error('Failed to fetch projects:', error)
     }

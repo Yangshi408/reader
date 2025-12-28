@@ -57,9 +57,8 @@
         <!-- 左侧内容区域 -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">图标:</label>
-          <div
-            class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
-            <img v-if="form.icon" :src="form.icon" class="w-full h-full object-cover">
+          <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
+            <img v-if="form.icon" :src="form.icon" alt='' class="w-full h-full object-cover">
             <i v-else class="fas fa-plus text-3xl text-gray-400 group-hover:text-gray-600"></i>
             <input type="file" class="absolute inset-0 opacity-0 cursor-pointer">
           </div>
@@ -155,20 +154,32 @@
                 <div class="max-h-64 overflow-y-auto p-3">
                   <!-- 简化显示，不分组，只展示过滤后的标签 -->
                   <div class="flex flex-wrap gap-2">
-                    <label v-for="tag in filteredTags" :key="tag.id" :class="[
-                      'cursor-pointer transition-all duration-200',
-                      'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
-                      selectedTags.includes(tag.id)
-                        ? tag.color + ' border-transparent'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    ]">
-                      <input type="checkbox" v-model="selectedTags" :value="tag.id" class="sr-only"
-                        @change="handleTagChange">
+                    <label
+                      v-for="tag in filteredTags"
+                      :key="tag.id"
+                      :class="[
+                        'cursor-pointer transition-all duration-200',
+                        'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
+                        selectedTags.value.indexOf(tag.id) !== -1
+                          ? tag.color + ' border-transparent'
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                      ]"
+                    >
+                      <input
+                        type="checkbox"
+                        v-model="selectedTags"
+                        :value="tag.id"
+                        class="sr-only"
+                        @change="handleTagChange"
+                      >
                       <span class="flex items-center gap-1">
                         {{ tag.name }}
                         <span v-if="tag.id === 'general'" class="text-[10px] text-gray-500">(必选)</span>
                       </span>
-                      <i v-if="selectedTags.includes(tag.id)" class="fas fa-check text-[10px] ml-1"></i>
+                      <i
+                        v-if="selectedTags.value.indexOf(tag.id) !== -1"
+                        class="fas fa-check text-[10px] ml-1"
+                      ></i>
                     </label>
                   </div>
 
@@ -201,7 +212,7 @@
               <div class="mt-3 text-xs text-gray-400">
                 <i class="fas fa-exclamation-circle mr-1"></i>
                 请至少选择一个标签
-                <div v-if="!selectedTags.includes('general')" class="text-red-500 font-medium mt-1">
+                <div v-if="selectedTags.value.indexOf('general') === -1" class="text-red-500 font-medium mt-1">
                   ⚠️ 必须包含"通用"标签
                 </div>
               </div>
@@ -223,17 +234,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useToolsStore } from '@/store/toolsStore'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { ElMessage } from 'element-plus'
 import { predefinedTags } from '@/data/tool/tags'
-import { storeToRefs } from 'pinia'
 // import { HttpManager } from '@/api'
 
-const toolsStore = useToolsStore()
+const store = useStore()
 
-const {
-  isAuthenticated // 是否登录
-} = storeToRefs(toolsStore)
+const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
 // 一、响应式数据定义
 const isAnalyzing = ref(false)
@@ -256,7 +264,7 @@ const formErrors = reactive({})
 // 二、计算属性
 // 1. 通过搜索过滤后的标签，未搜索时显示常用标签
 const filteredTags = computed(() => {
-  const searchTerm = tagSearch.value.toLowerCase()
+  const searchTerm = String(tagSearch.value || '').toLowerCase()
 
   if (searchTerm) {
     return predefinedTags.filter(tag =>
@@ -299,10 +307,10 @@ const removeTag = (tagId) => {
 }
 // 4. 表单验证
 const validateForm = () => {
-  formErrors.name = !form.name.trim() ? '请输入工具名称' : ''
-  formErrors.url = !form.url.trim() ? '请输入工具链接' : ''
+  formErrors.name = !(form.name || '').trim() ? '请输入工具名称' : ''
+  formErrors.url = !(form.url || '').trim() ? '请输入工具链接' : ''
   formErrors.category = !form.category ? '请选择分类' : ''
-  formErrors.desc = !form.desc.trim() ? '请输入简介' : form.desc.length > 80 ? '简介不能超过80字' : ''
+  formErrors.desc = !(form.desc || '').trim() ? '请输入简介' : form.desc.length > 80 ? '简介不能超过80字' : ''
 
   // 对url进行简单格式验证
   const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/
@@ -313,7 +321,7 @@ const validateForm = () => {
   // 标签验证
   if (selectedTags.value.length === 0) {
     formErrors.tags = '请至少选择一个标签'
-  } else if (!selectedTags.value.includes('general')) {
+  } else if (selectedTags.value.indexOf('general') === -1) {
     formErrors.tags = '必须包含"通用"标签'
   } else {
     formErrors.tags = ''
@@ -347,14 +355,15 @@ const onErrorLeave = (el) => {
 }
 // 5. 自动填充（未实现，后续需要调用AI + 爬虫）
 const handleAutoFill = async () => {
-  if (!form.url.trim()) {
+  if (!(form.url || '').trim()) {
     ElMessage.warning('请先填写链接')
     return
   }
 
   isAnalyzing.value = true
   try {
-    const data = await toolsStore.analyzeUrl(form.url)
+    // 使用 Vuex action
+    const data = await store.dispatch('analyzeUrl', form.url)
     form.name = data.name
     form.desc = data.desc.substring(0, 80)
     form.fullDesc = data.desc
@@ -451,7 +460,7 @@ watch(() => form.category, (newCategory) => {
 
     // 保留已选标签，添加推荐的标签（不重复）
     recommended.forEach(tagId => {
-      if (!selectedTags.value.includes(tagId) && predefinedTags.some(tag => tag.id === tagId)) {
+      if (selectedTags.value.indexOf(tagId) === -1 && predefinedTags.some(tag => tag.id === tagId)) {
         selectedTags.value.push(tagId)
       }
     })
