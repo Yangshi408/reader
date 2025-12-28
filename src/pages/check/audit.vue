@@ -306,7 +306,7 @@
                         <div class="mt-8 flex justify-center">
                             <el-pagination 
                                 background 
-                                layout="prev, pager, next, jumper, total" 
+                                layout="prev, pager, next, jumper" 
                                 :current-page="page" 
                                 :page-size="pageSize" 
                                 :total="total" 
@@ -335,10 +335,10 @@ const router = useRouter()
 // 一、变量定义
 const activeTab = ref('tools')
 const loading = ref(false)
-const items = ref([])
-const page = ref(1)
-const pageSize = ref(6)
-const total = ref(0)
+const items = ref([]) // 待审核项目列表
+const page = ref(1) // 当前页码
+const pageSize = ref(6) // 每页条数
+const total = ref(0) // 总条数
 // 用户菜单显示控制
 const showUserMenu = ref(false)
 const avatarRef = ref(null)

@@ -417,11 +417,6 @@ const submit = async () => {
       // 清空本地草稿
       localStorage.removeItem(DRAFT_KEY);
       
-      // 持久化已提交的工具数据到本地
-      const savedTools = JSON.parse(localStorage.getItem(SUBMITTED_KEY) || '[]');
-      savedTools.push({ ...submitData, id: Date.now() }); // 新增临时ID（后端返回则替换）
-      localStorage.setItem(SUBMITTED_KEY, JSON.stringify(savedTools));
-      
       ElMessage.success(response.message || '提交成功，等待管理员审核')
 
       // 重置表单
