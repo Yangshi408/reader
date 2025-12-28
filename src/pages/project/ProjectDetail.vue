@@ -1,7 +1,8 @@
 <template>
   <div v-if="project && !isLoading" class="animate-fade-in max-w-5xl mx-auto">
     <!-- 项目信息区域 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex gap-8 items-start mb-8 relative overflow-hidden">
+    <div
+      class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex gap-8 items-start mb-8 relative overflow-hidden">
       <!-- 背景装饰 -->
       <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
 
@@ -31,8 +32,7 @@
         </div>
 
         <!-- 贡献者 -->
-        <div
-          v-if="project.contributors && project.contributors.length > 0"
+        <div v-if="project.contributors && project.contributors.length > 0"
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
           <img :src="project.contributors[0].avatar" alt='用户头像' class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">{{ project.contributors[0].name }}</span>
@@ -45,7 +45,8 @@
         <div class="flex gap-3 mb-4">
           <span class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">{{ project.category }}</span>
           <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{{ project.license || '开源' }}</span>
-          <span v-if="project.status === 'active'" class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs">活跃中</span>
+          <span v-if="project.status === 'active'"
+            class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs">活跃中</span>
           <span v-else class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">已归档</span>
         </div>
 
@@ -59,12 +60,9 @@
         <div class="flex items-center gap-4 text-sm text-gray-500 mb-6">
           <span class="whitespace-nowrap">技术栈:</span>
           <div class="flex gap-2 flex-wrap">
-            <span
-              v-for="tech in project.technologies"
-              :key="tech"
+            <span v-for="tech in project.technologies" :key="tech"
               class="cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1 hover:scale-105 hover:shadow-sm bg-blue-100 text-blue-700"
-              :title="tech"
-            >
+              :title="tech">
               {{ tech }}
             </span>
             <div v-if="!project.technologies || project.technologies.length === 0" class="text-gray-400 text-sm">
@@ -76,12 +74,12 @@
         <!-- 项目链接 -->
         <div class="flex gap-4">
           <a v-if="project.githubUrl" :href="project.githubUrl" target="_blank"
-             class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
+            class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
             <i class="fab fa-github"></i> GitHub
             <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
           </a>
           <a v-if="project.demoUrl" :href="project.demoUrl" target="_blank"
-             class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
+            class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors group">
             <i class="fas fa-external-link-alt"></i> 在线演示
             <i class="fas fa-chevron-right text-xs group-hover:translate-x-1 transition-transform"></i>
           </a>
@@ -103,7 +101,8 @@
     </div>
 
     <!-- 贡献者区域 -->
-    <div v-if="project.contributors && project.contributors.length > 0" class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
+    <div v-if="project.contributors && project.contributors.length > 0"
+      class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
       <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
         <i class="fas fa-users"></i> 贡献者
         <span class="text-sm font-normal text-gray-500">
@@ -112,7 +111,7 @@
       </h2>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div v-for="contributor in project.contributors" :key="contributor.id"
-             class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors">
+          class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors">
           <img :src="contributor.avatar" alt='用户头像' class="w-10 h-10 rounded-full border border-gray-300">
           <div>
             <div class="font-medium text-gray-800">{{ contributor.name }}</div>
@@ -135,33 +134,22 @@
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
           <span class="text-sm text-gray-600">排序方式:</span>
-          <el-select
-            v-model="sortType"
-            size="small"
-            @change="sortComments"
-            class="w-32"
-          >
+          <el-select v-model="sortType" size="small" @change="sortComments" class="w-32">
             <el-option label="最新" value="latest" />
             <el-option label="最热" value="hot" />
           </el-select>
         </div>
 
         <div v-if="pagination.totalPages > 1" class="flex items-center gap-2">
-          <button
-            @click="prevPage"
-            :disabled="pagination.page === 1"
-            class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button @click="prevPage" :disabled="pagination.page === 1"
+            class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
             上一页
           </button>
           <span class="text-sm text-gray-600">
             第 {{ pagination.page }} / {{ pagination.totalPages }} 页
           </span>
-          <button
-            @click="nextPage"
-            :disabled="pagination.page === pagination.totalPages"
-            class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button @click="nextPage" :disabled="pagination.page === pagination.totalPages"
+            class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
             下一页
           </button>
         </div>
@@ -169,18 +157,12 @@
 
       <!-- 评论列表 -->
       <div v-if="currentPageComments.length > 0" class="space-y-6 mb-8">
-        <div
-          v-for="comment in currentPageComments"
-          :key="comment.id"
-          class="comment-card bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors"
-        >
+        <div v-for="comment in currentPageComments" :key="comment.id"
+          class="comment-card bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
           <div class="flex items-start justify-between mb-3">
             <div class="flex items-center gap-3">
-              <img
-                :src="comment.avatar || '/default-avatar.png'"
-                class="w-10 h-10 rounded-full border border-gray-300"
-                alt="用户头像"
-              >
+              <img :src="comment.avatar || '/default-avatar.png'" class="w-10 h-10 rounded-full border border-gray-300"
+                alt="用户头像">
               <div>
                 <div class="font-medium text-gray-800">
                   {{ comment.nickname || comment.username || '匿名用户' }}
@@ -192,21 +174,14 @@
             </div>
 
             <div class="flex items-center gap-4">
-              <button
-                @click="handleLikeComment(comment.id)"
+              <button @click="handleLikeComment(comment.id)"
                 class="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-                :class="{ 'text-red-500': comment.isLiked }"
-                :disabled="!isAuthenticated"
-              >
+                :class="{ 'text-red-500': comment.isLiked }" :disabled="!isAuthenticated">
                 <i :class="comment.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i>
                 <span class="text-sm">{{ comment.likes || 0 }}</span>
               </button>
-              <button
-                v-if="checkCanDelete(comment)"
-                @click="handleDeleteComment(comment.id)"
-                class="text-gray-400 hover:text-red-500 transition-colors text-sm"
-                title="删除评论"
-              >
+              <button v-if="checkCanDelete(comment)" @click="handleDeleteComment(comment.id)"
+                class="text-gray-400 hover:text-red-500 transition-colors text-sm" title="删除评论">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
@@ -231,29 +206,18 @@
       <!-- 发表评论 -->
       <div v-if="isAuthenticated" class="mt-8">
         <div class="flex items-start gap-4">
-          <img
-            :src="userInfo.avatar || '/default-avatar.png'"
-            class="w-10 h-10 rounded-full border border-gray-300 flex-shrink-0"
-            alt="我的头像"
-          >
+          <img :src="userInfo.avatar || '/default-avatar.png'"
+            class="w-10 h-10 rounded-full border border-gray-300 flex-shrink-0" alt="我的头像">
           <div class="flex-1">
-            <textarea
-              v-model="newComment"
-              placeholder="写下你的评论... (支持emoji表情)"
-              rows="3"
+            <textarea v-model="newComment" placeholder="写下你的评论... (支持emoji表情)" rows="3"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all"
-              @keydown.ctrl.enter="submitComment"
-              maxlength="500"
-            ></textarea>
+              @keydown.ctrl.enter="submitComment" maxlength="500"></textarea>
             <div class="flex justify-between items-center mt-3">
               <div class="text-sm text-gray-500">
                 {{ newComment.length }}/500
               </div>
-              <button
-                @click="submitComment"
-                :disabled="!newComment.trim() || submittingComment"
-                class="px-6 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-              >
+              <button @click="submitComment" :disabled="!newComment.trim() || submittingComment"
+                class="px-6 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2">
                 <i v-if="submittingComment" class="fas fa-spinner fa-spin"></i>
                 发表评论
               </button>
@@ -265,10 +229,8 @@
       <!-- 未登录提示 -->
       <div v-else class="mt-8 p-6 bg-gray-50 rounded-xl text-center">
         <p class="text-gray-600 mb-3">登录后即可发表评论</p>
-        <button
-          @click="goToLogin"
-          class="px-6 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
-        >
+        <button @click="goToLogin"
+          class="px-6 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors">
           立即登录
         </button>
       </div>
@@ -277,136 +239,7 @@
   <!-- 加载状态 -->
   <div v-else-if="isLoading" class="max-w-5xl mx-auto">
     <!-- 项目信息骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
-      <div class="flex gap-8 items-start">
-        <!-- 左侧图标区域 -->
-        <div class="flex flex-col items-center gap-4 min-w-[120px]">
-          <div class="w-28 h-28 rounded-3xl bg-gray-200"></div>
-          <div class="flex gap-6">
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
-              <div class="h-3 w-8 bg-gray-200 rounded"></div>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 rounded-full bg-gray-200 mb-1"></div>
-              <div class="h-3 w-8 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-          <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
-        </div>
-
-        <!-- 右侧内容区域 -->
-        <div class="flex-1">
-          <!-- 标签骨架 -->
-          <div class="flex gap-3 mb-4">
-            <div class="w-16 h-6 bg-gray-200 rounded"></div>
-            <div class="w-12 h-6 bg-gray-200 rounded"></div>
-            <div class="w-20 h-6 bg-gray-200 rounded"></div>
-          </div>
-
-          <!-- 标题骨架 -->
-          <div class="h-8 bg-gray-300 rounded mb-4 max-w-md"></div>
-
-          <!-- 描述骨架 -->
-          <div class="space-y-2 mb-6">
-            <div class="h-4 bg-gray-200 rounded"></div>
-            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-            <div class="h-4 bg-gray-200 rounded w-4/6"></div>
-          </div>
-
-          <!-- 标签骨架 -->
-          <div class="flex items-center gap-4 mb-6">
-            <div class="w-8 h-4 bg-gray-200 rounded"></div>
-            <div class="flex gap-2">
-              <div class="w-16 h-6 bg-gray-200 rounded-full"></div>
-              <div class="w-12 h-6 bg-gray-200 rounded-full"></div>
-              <div class="w-20 h-6 bg-gray-200 rounded-full"></div>
-            </div>
-          </div>
-
-          <!-- 按钮骨架 -->
-          <div class="w-32 h-10 bg-gray-300 rounded-lg"></div>
-          <div class="w-48 h-3 bg-gray-200 rounded mt-2"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 项目详情骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8 animate-pulse">
-      <div class="flex items-center gap-2 mb-6">
-        <div class="w-5 h-5 bg-blue-200 rounded"></div>
-        <div class="h-6 w-24 bg-gray-300 rounded"></div>
-      </div>
-
-      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <div class="space-y-3">
-          <div class="h-4 bg-gray-200 rounded"></div>
-          <div class="h-4 bg-gray-200 rounded w-11/12"></div>
-          <div class="h-4 bg-gray-200 rounded w-10/12"></div>
-          <div class="h-4 bg-gray-200 rounded w-9/12"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 评论区域骨架屏 -->
-    <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-pulse">
-      <div class="flex items-center gap-2 mb-6">
-        <div class="w-5 h-5 bg-gray-300 rounded"></div>
-        <div class="h-6 w-16 bg-gray-300 rounded"></div>
-        <div class="h-4 w-8 bg-gray-200 rounded"></div>
-      </div>
-
-      <!-- 排序和分页骨架 -->
-      <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-4">
-          <div class="h-4 w-16 bg-gray-200 rounded"></div>
-          <div class="w-32 h-8 bg-gray-200 rounded"></div>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-16 h-8 bg-gray-200 rounded"></div>
-          <div class="w-20 h-4 bg-gray-200 rounded"></div>
-          <div class="w-16 h-8 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-
-      <!-- 评论列表骨架 -->
-      <div class="space-y-6 mb-8">
-        <div v-for="i in 2" :key="i" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-gray-300"></div>
-              <div class="space-y-2">
-                <div class="h-4 w-24 bg-gray-300 rounded"></div>
-                <div class="h-3 w-16 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-6 bg-gray-200 rounded"></div>
-              <div class="w-6 h-6 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-          <div class="space-y-2 mt-4">
-            <div class="h-3 bg-gray-200 rounded w-full"></div>
-            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div class="h-3 bg-gray-200 rounded w-4/6"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 发表评论骨架 -->
-      <div class="mt-8">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
-          <div class="flex-1">
-            <div class="w-full h-24 bg-gray-100 rounded-lg"></div>
-            <div class="flex justify-between items-center mt-3">
-              <div class="w-12 h-3 bg-gray-200 rounded"></div>
-              <div class="w-24 h-8 bg-gray-300 rounded-lg"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <detailSkeleton />
   </div>
 </template>
 
@@ -416,6 +249,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex' // 修改：使用 Vuex
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { HttpManager } from '@/api'
+import { detailSkeleton } from '@/components/DetailSkeleton.vue'
 // 假设有项目标签数据
 // import { projectTags } from '@/store/projectTags'
 import {
@@ -424,6 +258,7 @@ import {
   getCommentsByProjectId,
   toggleLikeMockProjectComment
 } from '@/data/project/mockData'
+
 
 const router = useRouter()
 const route = useRoute()
@@ -737,6 +572,7 @@ onMounted(async () => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

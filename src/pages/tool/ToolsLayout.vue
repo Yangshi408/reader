@@ -71,10 +71,10 @@
       <div class="mt-auto border-t border-gray-100 pt-2 px-2">
         <!-- 工具提交按钮 - 收起时居中 -->
         <button
-          :class="['flex items-center rounded-lg transition-colors cursor-pointer',
+          :class="['w-full flex items-center rounded-lg transition-colors',
             isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
             route.name === 'ToolSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50',
-            disableToolSubmit ? 'opacity-50 cursor-not-allowed' : '']"
+            disableToolSubmit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
           :disabled="disableToolSubmit"
           @click="router.push('/tools/submit')"
         >

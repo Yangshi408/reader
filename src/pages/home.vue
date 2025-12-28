@@ -74,7 +74,7 @@
               v-for="item in visibleSidebarItems"
               :key="item.id"
               :class="['nav-item', { active: activeSection === item.id }]"
-              @click="scrollToSection(item.id)"
+              @click="handleNavItem(item)"
             >
               <i :class="['fas nav-icon', item.icon, !isCollapsed ? 'with-margin' : '']"></i>
               <span v-if="!isCollapsed" class="nav-text">{{ item.name }}</span>
@@ -310,12 +310,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import logoImg from '@/assets/logo.png'
+
+const router = useRouter()
 
 const user = ref({
   isLogin: true,
-  role: 'guest',
-  name: '',
+  role: 'admin',
+  nickName: '',
   avatar: ''
 })
 
@@ -338,14 +341,23 @@ const sidebarItems = ref([
   { id: 'tools', name: '精选工具', icon: 'fa-tools' },
   { id: 'course', name: '课程浏览', icon: 'fa-book-open' },
   { id: 'projects', name: '项目情况', icon: 'fa-project-diagram' },
-  { id: 'review', name: '审核状态', icon: 'fa-shield-alt', adminOnly: true }
+  { id: 'audit', name: '审核中心', icon: 'fa-gavel', adminOnly: true, route: '/check/audit' },
+  // { id: 'review', name: '审核状态', icon: 'fa-shield-alt', adminOnly: true }
 ])
 
 const visibleSidebarItems = computed(() =>
   sidebarItems.value.filter(item => !item.adminOnly || user.value.role === 'admin')
 )
 
-const userInitial = computed(() => user.value.isLogin ? (user.value.name?.[0] || '我') : '访')
+const userInitial = computed(() => user.value.isLogin ? (user.value.nickName?.[0] || '我') : '访')
+
+function handleNavItem(item) {
+  if (item.route) {
+    router.push(item.route)
+    return
+  }
+  scrollToSection(item.id)
+}
 
 const engines = [
   { name: '百度', value: 'https://www.baidu.com/s?wd=' },
