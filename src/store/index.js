@@ -2,7 +2,7 @@
 import { createStore } from 'vuex'
 import { HttpManager } from '@/api'
 import { mockProjects } from '@/data/project/mockData'
-import { mockData } from '@/data/tool/mockData'
+import { mockTools } from '@/data/tool/mockData'
 import { predefinedTags } from '@/data/tool/tags'
 
 export default createStore({
@@ -148,9 +148,12 @@ export default createStore({
         sort: '最多浏览'
       },
       currentToolDetail: null,
-      disableToolSubmit: false,
-      isAuthenticated: !!localStorage.getItem('token'),
-      tagsByCategory: {}
+      disableToolSubmit: true,
+      showBackButton: false,  // 新增：专门控制返回按钮显示
+      // 从 toolsStore.js 添加的额外状态
+      // isAuthenticated: !!localStorage.getItem('token'), // 直接从 localStorage 检查 token
+      isAuthenticated: true, // 模拟时使用，后续需要删除
+      tagsByCategory: {} // 缓存标签分组数据
     }
   },
 
@@ -351,6 +354,10 @@ export default createStore({
 
     setDisableToolSubmit(state, disabled) {
       state.tools.disableToolSubmit = disabled
+    },
+
+    setShowBackButton(state, show) {
+      state.tools.showBackButton = show
     },
 
     updateToolField(state, { toolId, field, value }) {
@@ -732,11 +739,61 @@ export default createStore({
     async fetchTools({ commit, state }, { params = {}, useMock = false } = {}) {
       commit('setToolsLoading', true)
 
-      // 统一的处理函数
-      const handleToolsData = (toolsList) => {
-        commit('setToolsList', toolsList)
-        commit('setToolsCategories', [...new Set(toolsList.map(t => t.category))])
+      try {
+        if (useMock) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+          commit('setToolsList', mockTools)
+          commit('setToolsCategories', [...new Set(mockTools.map(t => t.category))])
+          commit('setToolsPagination', { total: mockTools.length })
 
+          // 初始化标签分组数据
+          const filterTags = (ids) => predefinedTags?.filter(tag => ids.includes(tag.id)) || []
+          const tagsByCategory = {
+            平台: filterTags(['web', 'desktop', 'mobile', 'cross-platform']),
+            操作系统: filterTags(['windows', 'macos', 'linux', 'ios', 'android']),
+            技术栈: filterTags(['javascript', 'python', 'java', 'csharp', 'cpp', 'php', 'go', 'rust']),
+            工具类型: filterTags(['ide', 'editor', 'cli', 'api', 'debug', 'test', 'design']),
+            用途领域: filterTags(['frontend', 'backend', 'database', 'devops', 'ai-ml', 'data-science', 'web3', 'game-dev']),
+            许可证价格: filterTags(['open-source', 'free', 'freemium', 'paid', 'subscription']),
+            其他: filterTags(['general', 'new', 'popular', 'official', 'community'])
+          }
+          commit('setToolsTagsByCategory', tagsByCategory)
+        } else {
+          const response = await HttpManager.getTools({
+            page: state.tools.pagination.page,
+            limit: state.tools.pagination.limit,
+            ...params
+          })
+
+          if (response.code === 200) {
+            const toolsList = response.data?.list || response.data || []
+            commit('setToolsList', toolsList)
+            commit('setToolsPagination', {
+              total: response.data?.total || toolsList.length,
+              hasMore: response.data?.hasMore || false
+            })
+            commit('setToolsCategories', [...new Set(toolsList.map(t => t.category))])
+
+            // 初始化标签分组数据
+            const filterTags = (ids) => predefinedTags?.filter(tag => ids.includes(tag.id)) || []
+            const tagsByCategory = {
+              平台: filterTags(['web', 'desktop', 'mobile', 'cross-platform']),
+              操作系统: filterTags(['windows', 'macos', 'linux', 'ios', 'android']),
+              技术栈: filterTags(['javascript', 'python', 'java', 'csharp', 'cpp', 'php', 'go', 'rust']),
+              工具类型: filterTags(['ide', 'editor', 'cli', 'api', 'debug', 'test', 'design']),
+              用途领域: filterTags(['frontend', 'backend', 'database', 'devops', 'ai-ml', 'data-science', 'web3', 'game-dev']),
+              许可证价格: filterTags(['open-source', 'free', 'freemium', 'paid', 'subscription']),
+              其他: filterTags(['general', 'new', 'popular', 'official', 'community'])
+            }
+            commit('setToolsTagsByCategory', tagsByCategory)
+          }
+        }
+      } catch (error) {
+        console.error('获取工具列表失败:', error)
+        commit('setToolsList', mockTools)
+        commit('setToolsCategories', [...new Set(mockTools.map(t => t.category))])
+
+        // 初始化标签分组数据
         const filterTags = (ids) => predefinedTags?.filter(tag => ids.includes(tag.id)) || []
         const tagsByCategory = {
           平台: filterTags(['web', 'desktop', 'mobile', 'cross-platform']),
@@ -748,41 +805,6 @@ export default createStore({
           其他: filterTags(['general', 'new', 'popular', 'official', 'community'])
         }
         commit('setToolsTagsByCategory', tagsByCategory)
-
-        return toolsList.length
-      }
-
-      try {
-        let toolsData, paginationInfo
-
-        if (useMock) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-          toolsData = mockData
-          paginationInfo = { total: mockData.length }
-        } else {
-          const response = await HttpManager.getTools({
-            page: state.tools.pagination.page,
-            limit: state.tools.pagination.limit,
-            ...params
-          })
-
-          if (response.code === 200) {
-            toolsData = response.data?.list || response.data || []
-            paginationInfo = {
-              total: response.data?.total || toolsData.length,
-              hasMore: response.data?.hasMore || false
-            }
-          } else {
-            throw new Error('API返回错误')
-          }
-        }
-
-        handleToolsData(toolsData)
-        commit('setToolsPagination', paginationInfo)
-      } catch (error) {
-        console.error('获取工具列表失败:', error)
-        handleToolsData(mockData)
-        commit('setToolsPagination', { total: mockData.length })
       } finally {
         commit('setToolsLoading', false)
       }
@@ -834,7 +856,7 @@ export default createStore({
         return state.tools.toolsList.find(t => t.id === parseInt(toolId)) || null
       } catch (error) {
         console.error('获取工具详情失败:', error)
-        return state.tools.toolsList.find(t => t.id === parseInt(toolId)) || null
+        return mockTools.find(t => t.id === parseInt(toolId)) || null
       }
     },
 

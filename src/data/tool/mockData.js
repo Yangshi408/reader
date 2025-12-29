@@ -1,4 +1,4 @@
-export const mockData = [
+export const mockTools = [
   // 软件开发 (8个)
   {
     id: 1,

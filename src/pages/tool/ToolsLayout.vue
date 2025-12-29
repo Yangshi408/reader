@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 
@@ -110,7 +110,7 @@ const store = useStore()  // 替换 useToolsStore
 const router = useRouter()
 const route = useRoute()
 
-const categories = computed(() => store.state.tools.categories)
+const categories = ['软件开发', '项目协作', '个人提升', '论文阅读']
 const disableToolSubmit = computed(() => store.state.tools.disableToolSubmit)
 
 // 一、变量声明
@@ -119,7 +119,7 @@ const isCollapsed = ref(false)
 
 // 二、计算属性
 const showBackButton = computed(() => {
-  return route.name === 'ToolDetail' || route.name === 'ToolSubmit' || route.name !== 'ToolsList'
+  return store.state.tools.showBackButton
 })
 
 // 三、方法
@@ -156,7 +156,23 @@ const handleKeyDown = (e) => {
   }
 }
 
-// 四、生命周期函数
+// 四、监听器
+// 1. 监听路由变化，自动管理返回按钮状态
+watch(() => route.name, (newRouteName) => {
+  if (newRouteName === 'ToolDetail') {
+    // 进入详情页时，先隐藏返回按钮
+    store.commit('setShowBackButton', false)
+  } else if (newRouteName === 'ToolSubmit') {
+    // 进入提交页面时，直接显示返回按钮（提交页不需要加载）
+    console.log('进入工具提交页面，显示返回按钮')
+    store.commit('setShowBackButton', true)
+  } else {
+    // 其他页面隐藏返回按钮
+    store.commit('setShowBackButton', false)
+  }
+}, { immediate: true })
+
+// 五、生命周期函数
 // 1. 检查localStorage中的侧边栏状态
 onMounted(async () => {
   const savedState = localStorage.getItem('sidebarCollapsed')
@@ -165,23 +181,13 @@ onMounted(async () => {
   }
 
   window.addEventListener('keydown', handleKeyDown)
-
-  // 如果分类数据为空，则获取工具列表
-  if (categories.value.length === 0) {
-    try {
-      // 使用 Vuex action
-      await store.dispatch('fetchTools', {}, true)
-    } catch (error) {
-      console.error('Failed to fetch tools:', error)
-    }
-  }
 })
 // 2. 清理事件监听器
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-// 五、路由守卫
+// 六、路由守卫
 // 当路由更新时（在同一布局内的页面切换），中断之前的请求
 onBeforeRouteUpdate((to, from, next) => {
   // 如果是从详情页跳到其他页面，中断详情页的请求

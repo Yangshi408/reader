@@ -25,7 +25,7 @@
         <!-- 贡献者 -->
         <div
           class="flex items-center gap-2 mt-2 bg-gray-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-          <img :src="userInfo.avatar || '/default-avatar.png'" alt="用户头像" class="w-5 h-5 rounded-full">
+          <img :src="user.avatar || '/default-avatar.png'" alt="用户头像" class="w-5 h-5 rounded-full">
           <span class="text-xs text-gray-600">Admin</span>
         </div>
       </div>
@@ -201,7 +201,7 @@
       <div v-if="isAuthenticated" class="mt-8">
         <div class="flex items-start gap-4">
           <img
-            :src="userInfo.avatar || '/default-avatar.png'"
+            :src="user.avatar || '/default-avatar.png'"
             class="w-10 h-10 rounded-full border border-gray-300 flex-shrink-0"
             alt="我的头像"
           >
@@ -251,7 +251,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, toRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -265,10 +265,8 @@ const route = useRoute()
 const store = useStore()  // 替换 toolsStore
 
 // eslint-disable-next-line no-unused-vars
-const { userInfo, tools } = computed(() => ({
-  userInfo: store.state.user,
-  tools: store.state.tools
-})).value
+const user = toRef(store.state, 'user')
+console.log('当前用户信息:', user.value)
 
 const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
@@ -352,21 +350,28 @@ const handleCollect = async () => {
     ElMessage.warning('请先登录')
     return
   }
-
   try {
+    let response
+
     if (isCollected.value) {
       // 取消收藏
       // await HttpManager.removeToolCollection(tool.value.id, 'tool')
-      await mockRemoveToolCollection(tool.value.id, 'tool') // 模拟
+      response = await mockRemoveToolCollection(tool.value.id, 'tool') // 模拟
     } else {
       // 添加收藏
       // await HttpManager.toggleToolCollection(tool.value.id, 'tool')
-      await mockToggleToolCollection(tool.value.id, 'tool') // 模拟
+      response = await mockToggleToolCollection(tool.value.id, 'tool') // 模拟
     }
 
-    // 更新收藏状态
-    isCollected.value = !isCollected.value
-    ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
+    if (response.code === 200 && response.message) {
+      // 更新收藏状态（前端界面更新）
+      isCollected.value = !isCollected.value
+      tool.value.stars += isCollected.value ? 1 : -1
+
+      ElMessage.success(isCollected.value ? '已收藏' : '已取消收藏')
+    } else {
+      throw new Error(response.message || '收藏操作失败')
+    }
   } catch (error) {
     ElMessage.error(error.message || '切换收藏状态操作失败')
   }
@@ -419,6 +424,7 @@ const mockToggleToolCollection = async (resourceId, resourceType) => {
 }
 // 5. 加载工具详细信息（在onMounted中使用）
 const loadToolDetail = async (id) => {
+  console.log('加载工具详情，ID:', id)
   isLoading.value = true
   // 使用 Vuex mutation
   store.commit('setDisableToolSubmit', true)
@@ -430,6 +436,9 @@ const loadToolDetail = async (id) => {
 
     tool.value = data
     isLoading.value = false
+
+    // 核心数据加载完成后，显示返回按钮并启用工具提交按钮
+    store.commit('setShowBackButton', true)
     store.commit('setDisableToolSubmit', false)
 
     // 非核心数据后台加载
@@ -440,6 +449,13 @@ const loadToolDetail = async (id) => {
   } catch (error) {
     if (!isComponentMounted.value) return
     console.error('加载核心数据失败:', error)
+    // 即使加载失败，也显示返回按钮（让用户可以返回）
+    store.commit('setShowBackButton', true)
+  } finally {
+    // 确保加载状态正确
+    if (isComponentMounted.value && isLoading.value) {
+      isLoading.value = false
+    }
   }
 }
 // 6. 获取评论
@@ -453,7 +469,7 @@ const fetchComments = async (toolId) => {
       comments.value = response.data.map(comment => ({
         ...comment,
         canDelete: isAuthenticated.value &&
-                  (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
+                  (user.value?.id === comment.userId || user.value?.role === 'admin')
       }))
       updatePagination()
     }
@@ -467,7 +483,7 @@ const fetchComments = async (toolId) => {
     comments.value = mockComments.map(comment => ({
       ...comment, // 创建副本，避免使用同一个对象的引用
       canDelete: isAuthenticated.value &&
-                (userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin')
+                (user.value?.id === comment.userId || user.value?.role === 'admin')
     }))
     updatePagination()
   } finally {
@@ -486,7 +502,8 @@ const submitComment = async () => {
   try {
     const response = await HttpManager.addToolComment(tool.value.id, {
       content: (newComment.value || '').trim()
-    })
+    }) // 这个api还需要将userId传过去
+
     if (response.code === 200 && response.data) {
       // 添加新评论到列表
       const newCommentData = {
@@ -507,7 +524,8 @@ const submitComment = async () => {
     // API失败时使用模拟数据
     console.error('发布评论失败，使用模拟数据:', error)
     const newCommentData = addMockComment(tool.value.id, newComment.value)
-    comments.value.unshift({ ...newCommentData })
+    comments.value.unshift({ ...newCommentData, canDelete: true })
+
     updatePagination()
     newComment.value = ''
     ElMessage.success('评论发布成功')
@@ -610,7 +628,7 @@ const handleLikeComment = async (commentId) => {
 // 10. 检查是否可删除评论
 const checkCanDelete = (comment) => {
   if (!isAuthenticated.value) return false
-  return userInfo.value?.id === comment.userId || userInfo.value?.role === 'admin'
+  return comment.canDelete
 }
 
 // 11. 排序评论
@@ -669,10 +687,10 @@ const formatTime = (timeString) => {
 
 // 四、生命周期函数
 // 1. 组件加载时加载数据
-onMounted(async () => {
+onMounted(() => {
   isComponentMounted.value = true
   const id = route.params.id
-  await loadToolDetail(id)
+  loadToolDetail(id)
 })
 // 2. 组件卸载时标记
 onUnmounted(() => {

@@ -55,14 +55,16 @@
     <div class="flex gap-6 items-start">
       <div class="flex-1 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg border border-white/60">
         <!-- 左侧内容区域 -->
+        <!-- 图标上传 -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">图标:</label>
           <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
             <img v-if="form.icon" :src="form.icon" alt='' class="w-full h-full object-cover">
             <i v-else class="fas fa-plus text-3xl text-gray-400 group-hover:text-gray-600"></i>
-            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer">
+            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" @change="handleIconUpload" accept="image/*">
           </div>
         </div>
+        <!-- 工具信息输入 -->
         <div class="mb-4">
           <div
             class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
@@ -71,6 +73,7 @@
               class="bg-transparent border-none outline-none flex-1 text-gray-700 font-medium">
           </div>
         </div>
+        <!-- 工具链接输入 -->
         <div class="mb-4 relative">
           <div
             class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
@@ -84,6 +87,7 @@
             {{ isAnalyzing ? '分析中...' : '一键填写' }}
           </button>
         </div>
+        <!-- 工具描述 -->
         <div class="mb-4">
           <div
             class="flex gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 transition-all">
@@ -95,6 +99,7 @@
             </div>
           </div>
         </div>
+        <!-- 工具使用说明 -->
         <div class="mb-4">
           <textarea v-model="form.fullDesc" placeholder="工具使用说明..."
             class="w-full h-40 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus:border-blue-500 outline-none resize-none text-gray-700"></textarea>
@@ -160,7 +165,7 @@
                       :class="[
                         'cursor-pointer transition-all duration-200',
                         'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
-                        selectedTags.value.indexOf(tag.id) !== -1
+                        selectedTags.indexOf(tag.id) !== -1
                           ? tag.color + ' border-transparent'
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                       ]"
@@ -177,7 +182,7 @@
                         <span v-if="tag.id === 'general'" class="text-[10px] text-gray-500">(必选)</span>
                       </span>
                       <i
-                        v-if="selectedTags.value.indexOf(tag.id) !== -1"
+                        v-if="selectedTags.indexOf(tag.id) !== -1"
                         class="fas fa-check text-[10px] ml-1"
                       ></i>
                     </label>
@@ -212,7 +217,7 @@
               <div class="mt-3 text-xs text-gray-400">
                 <i class="fas fa-exclamation-circle mr-1"></i>
                 请至少选择一个标签
-                <div v-if="selectedTags.value.indexOf('general') === -1" class="text-red-500 font-medium mt-1">
+                <div v-if="selectedTags.indexOf('general') === -1" class="text-red-500 font-medium mt-1">
                   ⚠️ 必须包含"通用"标签
                 </div>
               </div>
@@ -239,6 +244,9 @@ import { ElMessage } from 'element-plus'
 import { predefinedTags } from '@/data/tool/tags'
 // import { HttpManager } from '@/api'
 
+// 持久化存储 Key（统一管理）
+const DRAFT_KEY = 'TOOL_SUBMIT_DRAFT'; // 表单草稿 Key
+
 const store = useStore()
 
 const isAuthenticated = computed(() => store.getters.isAuthenticated)
@@ -252,7 +260,7 @@ const form = reactive({
   desc: '',
   fullDesc: '',
   category: '',
-  type: 'external'
+  type: 'internal'
 })
 const isSubmitting = ref(false)
 // 标签相关状态
@@ -283,15 +291,7 @@ const filteredTags = computed(() => {
 const getTagById = (tagId) => {
   return predefinedTags.find(tag => tag.id === tagId) || { name: tagId, color: 'bg-gray-100' }
 }
-// 2. 标签选择变更时激活的函数（绑定方法）
-const handleTagChange = () => {
-  // 确保至少有一个标签被选中
-  if (selectedTags.value.length === 0) {
-    selectedTags.value = ['general']
-    ElMessage.warning('请至少选择一个标签')
-  }
-}
-// 3. 取消选择标签
+// 2. 取消选择标签
 const removeTag = (tagId) => {
   if (tagId === 'general') {
     ElMessage.warning('"通用"标签是必选项，不能移除')
@@ -305,7 +305,7 @@ const removeTag = (tagId) => {
 
   selectedTags.value = selectedTags.value.filter(id => id !== tagId)
 }
-// 4. 表单验证
+// 3. 表单验证
 const validateForm = () => {
   formErrors.name = !(form.name || '').trim() ? '请输入工具名称' : ''
   formErrors.url = !(form.url || '').trim() ? '请输入工具链接' : ''
@@ -353,7 +353,23 @@ const onErrorLeave = (el) => {
   el.style.opacity = '0'
   el.style.transform = 'translateY(-10px)'
 }
-// 5. 自动填充（未实现，后续需要调用AI + 爬虫）
+// 5. 图标上传处理
+const handleIconUpload = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请上传图片文件')
+    return
+  }
+  // 读取文件并转为Base64
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    form.icon = event.target.result  // 赋值给form.icon实现预览
+  }
+  reader.readAsDataURL(file)
+}
+// 6. 自动填充（未实现，后续需要调用AI + 爬虫）
 const handleAutoFill = async () => {
   if (!(form.url || '').trim()) {
     ElMessage.warning('请先填写链接')
@@ -375,7 +391,7 @@ const handleAutoFill = async () => {
     isAnalyzing.value = false
   }
 }
-// 6. 提交
+// 7. 提交
 const submit = async () => {
   try {
     if (!validateForm()) {
@@ -390,17 +406,17 @@ const submit = async () => {
     // 准备数据
     const submitData = {
       ...form, // 解包获取副本，对于引用类型非常需要注意的地方（但是仅是浅拷贝，不过好在form的属性中无引用类型）
-      tags: [...selectedTags.value] // 数组也是引用类型，需要解包
-    }
-    // 验证标签
-    if (submitData.tags.length === 0) {
-      throw new Error('请至少选择一个标签')
+      tags: [...selectedTags.value], // 数组也是引用类型，需要解包
+      createTime: new Date().toISOString() // 增加提交时间（可选）
     }
 
     // const response = await HttpManager.submitTool(submitData)
     const response = await mockSubmitTool(submitData)
 
     if (response.code === 200) {
+      // 清空本地草稿
+      localStorage.removeItem(DRAFT_KEY);
+      
       ElMessage.success(response.message || '提交成功，等待管理员审核')
 
       // 重置表单
@@ -443,6 +459,39 @@ const mockSubmitTool = async () => {
     }, 1500) // 1500ms = 1.5秒延迟
   })
 }
+// 8. 自动保存草稿到本地
+const saveDraft = () => {
+  try {
+    const draft = {
+      form: { ...form }, // 复制form对象（避免引用）
+      selectedTags: [...selectedTags.value] // 复制标签数组
+    };
+    // 仅保存非空的有效草稿（可选：过滤空值）
+    if (form.name || form.url || form.description || selectedTags.value.length > 1) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }
+  } catch (e) {
+    console.error('保存表单草稿失败：', e);
+  }
+};
+// 9. 加载本地草稿
+const loadDraft = () => {
+  try {
+    const draftStr = localStorage.getItem(DRAFT_KEY);
+    if (draftStr) {
+      const draft = JSON.parse(draftStr);
+      // 恢复表单数据（合并，保留现有非空值）
+      Object.assign(form, draft.form || {});
+      // 恢复选中的标签（兜底默认值）
+      selectedTags.value = draft.selectedTags?.length ? draft.selectedTags : ['general'];
+      ElMessage.info('已恢复上次未提交的表单草稿');
+    }
+  } catch (e) {
+    console.error('加载表单草稿失败：', e);
+    // 加载失败时清空无效草稿
+    localStorage.removeItem(DRAFT_KEY);
+  }
+};
 
 // 四、监听器
 // 1. 工具分类自动推荐标签
@@ -466,10 +515,25 @@ watch(() => form.category, (newCategory) => {
     })
   }
 })
-
+//  2. 标签选择，确保至少有一个标签被选中
+watch(selectedTags, (newTags) => {
+  // 确保至少有一个标签被选中
+  if (newTags.length === 0) {
+    selectedTags.value = ['general']
+    ElMessage.warning('请至少选择一个标签')
+  }
+})
+// 3. 监听表单和标签变化，自动保存草稿（深度监听form的嵌套属性）
+watch(
+  [() => form, selectedTags], // 监听form（需包装成函数）和selectedTags
+  () => {
+    saveDraft(); // 变化时触发保存
+  },
+  { deep: true, immediate: false } // deep: true 监听form内部属性变化
+);
 // 五、生命周期函数
-onMounted(async () => {
-  console.log('ToolSubmit 组件被创建')
+onMounted(() => {
+  loadDraft()
 })
 
 onUnmounted(() => {
