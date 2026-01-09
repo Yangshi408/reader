@@ -20,7 +20,7 @@
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">项目封面:</label>
           <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
-            <img v-if="form.coverImage" :src="form.coverImage" class="w-full h-full object-cover">
+            <img v-if="form.coverImage" :src="form.coverImage" alt='' class="w-full h-full object-cover">
             <i v-else class="fas fa-plus text-3xl text-gray-400 group-hover:text-gray-600"></i>
             <input type="file" class="absolute inset-0 opacity-0 cursor-pointer">
           </div>
@@ -154,7 +154,7 @@
                       :class="[
                         'cursor-pointer transition-all duration-200',
                         'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
-                        selectedTags.includes(tag.id)
+                        selectedTags.indexOf(tag.id) !== -1
                           ? tag.color + ' border-transparent'
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                       ]"
@@ -170,7 +170,7 @@
                         {{ tag.name }}
                       </span>
                       <i
-                        v-if="selectedTags.includes(tag.id)"
+                        v-if="selectedTags.indexOf(tag.id) !== -1"
                         class="fas fa-check text-[10px] ml-1"
                       ></i>
                     </label>
@@ -229,16 +229,12 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { useProjectsStore } from '@/store/projectsStore'
+import { useStore } from 'vuex'  // 修改：使用 Vuex
 import { ElMessage } from 'element-plus'
 import { projectTags } from '@/data/project/projectTags'
-import { storeToRefs } from 'pinia'
 
-const projectsStore = useProjectsStore()
-
-const {
-  isAuthenticated
-} = storeToRefs(projectsStore)
+const store = useStore()
+const isAuthenticated = computed(() => store.getters.isLoggedIn)
 
 // 响应式数据定义
 const isAnalyzing = ref(false)
@@ -261,7 +257,7 @@ const techInput = ref('')
 
 // 计算属性
 const filteredTags = computed(() => {
-  const searchTerm = tagSearch.value.toLowerCase()
+  const searchTerm = String(tagSearch.value || '').toLowerCase()
 
   if (searchTerm) {
     return projectTags.filter(tag =>
@@ -270,7 +266,7 @@ const filteredTags = computed(() => {
     )
   }
 
-  return projectTags.slice(0, 20) // 显示前20个标签
+  return projectTags.slice(0, 20)
 })
 
 // 方法
@@ -294,8 +290,8 @@ const removeTag = (tagId) => {
 }
 
 const addTechnology = () => {
-  if (techInput.value.trim() && !form.technologies.includes(techInput.value.trim())) {
-    form.technologies.push(techInput.value.trim())
+  if ((techInput.value || '').trim() && form.technologies.indexOf((techInput.value || '').trim()) === -1) {
+    form.technologies.push((techInput.value || '').trim())
     techInput.value = ''
   }
 }
@@ -306,10 +302,10 @@ const removeTechnology = (index) => {
 
 const validateForm = () => {
   const errors = {}
-  if (!form.name.trim()) errors.name = '请输入项目名称'
-  if (!form.githubUrl.trim()) errors.githubUrl = '请输入GitHub链接'
+  if (!(form.name || '').trim()) errors.name = '请输入项目名称'
+  if (!(form.githubUrl || '').trim()) errors.githubUrl = '请输入GitHub链接'
   if (!form.category) errors.category = '请选择分类'
-  if (!form.description.trim()) errors.description = '请输入项目简介'
+  if (!(form.description || '').trim()) errors.description = '请输入项目简介'
   if (form.description.length > 80) errors.description = '简介不能超过80字'
   if (selectedTags.value.length === 0) errors.tags = '请至少选择一个标签'
 
@@ -317,7 +313,7 @@ const validateForm = () => {
 }
 
 const handleAutoFill = async () => {
-  if (!form.githubUrl.trim()) {
+  if (!(form.githubUrl || '').trim()) {
     ElMessage.warning('请先填写GitHub链接')
     return
   }
@@ -326,7 +322,7 @@ const handleAutoFill = async () => {
   try {
     // 模拟AI分析
     await new Promise(resolve => setTimeout(resolve, 2000))
-    form.name = form.githubUrl.split('/').pop() || '项目'
+    form.name = String(form.githubUrl || '').split('/').pop() || '项目'
     form.description = `这是一个基于 ${form.githubUrl} 的开源项目。`
     form.technologies = ['Vue', 'JavaScript', 'Node.js']
     ElMessage.success('AI 分析完成，内容已填充')
@@ -344,7 +340,8 @@ const submit = async () => {
       return
     }
     if (!isAuthenticated.value) {
-      throw new Error('请先登录')
+      ElMessage.warning('请先登录')
+      return
     }
     isSubmitting.value = true
 
@@ -389,7 +386,7 @@ watch(() => form.category, (newCategory) => {
     const recommended = categoryTagsMap[newCategory] || []
 
     recommended.forEach(tagId => {
-      if (!selectedTags.value.includes(tagId) && projectTags.some(tag => tag.id === tagId)) {
+      if (selectedTags.value.indexOf(tagId) === -1 && projectTags.some(tag => tag.id === tagId)) {
         selectedTags.value.push(tagId)
       }
     })

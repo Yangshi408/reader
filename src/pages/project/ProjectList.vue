@@ -87,7 +87,7 @@
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
               <div class="flex gap-2">
-                <button v-for="sort in ['最新', '最热', '最多收藏']" :key="sort" @click="projectsStore.toggleSort(sort)"
+                <button v-for="sort in ['最新', '最热', '最多收藏']" :key="sort" @click="store.toggleSort(sort)"
                         :class="['px-3 py-1 rounded-md text-sm border', activeFilters.sort === sort ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-200']">
                   {{ sort }}
                 </button>
@@ -122,7 +122,7 @@
                     <span
                       v-for="tag in tags"
                       :key="tag.id"
-                      @click="projectsStore.toggleTag(tag.id)"
+                      @click="store.toggleTag(tag.id)"
                       :class="[
                         'cursor-pointer px-2 py-1 rounded text-xs transition-all duration-200',
                         'border flex items-center gap-1',
@@ -263,30 +263,29 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useProjectsStore } from '@/store/projectsStore'
+import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { storeToRefs } from 'pinia'
 
 const router = useRouter()
-const projectsStore = useProjectsStore()
+const store = useStore()
 
-const {
-  projectsList,
-  categories,
-  userInfo,
-  activeFilters,
-  searchResults,
-  isAuthenticated
-} = storeToRefs(projectsStore)
+// 使用 Vuex 的 state 和 getters
+const projectsList = computed(() => store.state.projects.projectsList || [])
+const categories = computed(() => store.state.projects.categories || [])
+const userInfo = computed(() => store.getters.userInfo || {})
+const activeFilters = computed(() => store.state.projects.activeFilters || { tags: [], sort: '最新' })
+const searchResults = computed(() => store.state.projects.searchResults || [])
+const isAuthenticated = computed(() => store.getters.isLoggedIn || false)
 
 // 搜索引擎配置
 const engines = [
   { name: '本站', value: 'local' },
-  { name: '百度', value: 'https://www.baidu.com/s?wd=' },
-  { name: '谷歌', value: 'https://www.google.com/search?q=' },
-  { name: '必应', value: 'https://cn.bing.com/search?q=' }
+  { name: '百度', value: 'baidu' },
+  { name: '谷歌', value: 'google' },
+  { name: '必应', value: 'bing' }
 ]
+
 const searchEngine = ref('local')
 const engineMenuOpen = ref(false)
 
@@ -320,24 +319,29 @@ const tooltipTimers = ref({})
 const tagFilterSearch = ref('')
 const TOOLTIP_DELAY = 500
 
-// 计算属性
+// 计算属性 - 修复 includes() 错误
 const filteredTagGroups = computed(() => {
-  const groups = projectsStore.tagsByCategory
-  const searchTerm = tagFilterSearch.value.toLowerCase()
-  if (searchTerm) {
+  const tags = store.getters.projectsTagsByCategory || {}
+  const searchTerm = (tagFilterSearch.value || '').toLowerCase()
+
+  if (searchTerm && searchTerm.trim()) {
     const filtered = {}
-    Object.keys(groups).forEach(groupName => {
-      const filteredTags = groups[groupName].filter(tag =>
-        tag.name.toLowerCase().includes(searchTerm) ||
-        tag.id.toLowerCase().includes(searchTerm)
-      )
-      if (filteredTags.length > 0) {
-        filtered[groupName] = filteredTags
+    Object.keys(tags).forEach(groupName => {
+      if (tags[groupName]) {
+        const filteredTags = tags[groupName].filter(tag => {
+          if (!tag) return false
+          const tagName = (tag.name || '').toLowerCase()
+          const tagId = (tag.id || '').toLowerCase()
+          return tagName.includes(searchTerm) || tagId.includes(searchTerm)
+        })
+        if (filteredTags.length > 0) {
+          filtered[groupName] = filteredTags
+        }
       }
     })
     return filtered
   }
-  return groups
+  return tags
 })
 
 const filteredCategories = computed(() => {
@@ -367,18 +371,30 @@ const handleMouseLeave = (projectId) => {
 }
 
 const handleSearch = async () => {
-  const query = searchInput.value.trim()
+  const query = (searchInput.value || '').trim()
   if (!query) return
 
   if (searchEngine.value !== 'local') {
-    window.open(searchEngine.value + encodeURIComponent(query), '_blank')
+    let url = ''
+    switch (searchEngine.value) {
+      case 'baidu':
+        url = `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`
+        break
+      case 'google':
+        url = `https://www.google.com/search?q=${encodeURIComponent(query)}`
+        break
+      case 'bing':
+        url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
+        break
+    }
+    window.open(url, '_blank')
     searchInput.value = ''
     return
   }
 
   isSearching.value = true
   try {
-    await projectsStore.searchProjects(query)
+    await store.dispatch('searchProjects', { query })
     hasSearched.value = true
   } catch (error) {
     ElMessage.error('搜索失败')
@@ -396,11 +412,11 @@ const handleInputChange = () => {
 const clearSearch = () => {
   searchInput.value = ''
   hasSearched.value = false
-  searchResults.value = []
+  store.commit('setProjectsSearchResults', [])
 }
 
 const clearTagFilters = () => {
-  activeFilters.value.tags = []
+  store.commit('setProjectsActiveFilters', { tags: [] })
 }
 
 const getProjectsByCategory = (cat) => {
@@ -418,17 +434,27 @@ const getProjectsByCategory = (cat) => {
 }
 
 const filterProjectList = (list) => {
+  if (!list || !Array.isArray(list)) return []
+
+  const filtered = [...list]
+
   if (activeFilters.value.sort === '最新') {
-    list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
   } else if (activeFilters.value.sort === '最热') {
-    list.sort((a, b) => b.views - a.views)
+    filtered.sort((a, b) => (b.views || 0) - (a.views || 0))
   } else if (activeFilters.value.sort === '最多收藏') {
-    list.sort((a, b) => b.stars - a.stars)
+    filtered.sort((a, b) => (b.stars || 0) - (a.stars || 0))
   }
-  if (activeFilters.value.tags.length > 0) {
-    list = list?.filter(item => activeFilters.value.tags.every(tag => item.tags?.includes(tag)))
+
+  if (activeFilters.value.tags && activeFilters.value.tags.length > 0) {
+    return filtered.filter(item =>
+      activeFilters.value.tags.every(tag =>
+        item.tags?.includes(tag)
+      )
+    )
   }
-  return list
+
+  return filtered
 }
 
 const goToDetail = async (id) => {
@@ -437,8 +463,16 @@ const goToDetail = async (id) => {
     tooltipTimers.value[id] = null
   }
   activeProjectId.value = null
-  projectsStore.addProjectView(id)
-  router.push({ name: 'ProjectDetail', params: { id } })
+
+  // 注意：在 Vuex 中可能没有这个方法，我们需要检查
+  if (store._actions.addProjectView) {
+    await store.dispatch('addProjectView', id)
+  }
+
+  await router.push({
+    name: 'ProjectDetail',
+    params: { id }
+  })
 }
 
 const goToLogin = () => {
@@ -447,7 +481,7 @@ const goToLogin = () => {
 
 const handleLogout = async () => {
   try {
-    await projectsStore.logout()
+    await store.dispatch('logout')
     showUserMenu.value = false
     ElMessage.success('已退出登录')
   } catch (error) {
@@ -467,12 +501,15 @@ const avatarRef = ref(null)
 // 生命周期函数
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
+  // 初始化获取项目列表
+  store.dispatch('fetchProjects', { useMock: true })
 })
 
 onUnmounted(() => {
   Object.values(tooltipTimers.value).forEach(timerId => {
     if (timerId) clearTimeout(timerId)
   })
+  document.removeEventListener('click', closeDropdowns)
 })
 </script>
 

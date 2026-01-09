@@ -164,6 +164,20 @@ const constantRoutes = [
       }
     ]
   }
+  ,
+  // 审核页面路由
+  {
+    path: '/check',
+    component: RouterView,
+    children: [
+      {
+        path: 'audit',
+        name: 'Audit',
+        component: () => import('@/pages/check/audit.vue'),
+        meta: { title: '审核中心', requiresAuth: true }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({

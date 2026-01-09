@@ -1,5 +1,6 @@
 <template>
   <div class="max-w-4xl mx-auto">
+    <!-- 投稿须知 -->
     <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-blue-500 mb-6">
       <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-2">
         <i class="fas fa-exclamation-circle"></i> 投稿须知
@@ -13,53 +14,102 @@
         </ul>
       </div>
     </div>
+    <!-- 表单错误提示区域 -->
+    <Transition name="error-slide" @enter="onErrorEnter" @leave="onErrorLeave">
+      <div v-if="Object.values(formErrors).some(error => error)"
+        class="mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg p-4 error-alert">
+        <div class="flex items-start gap-3">
+          <i class="fas fa-exclamation-triangle text-red-500 mt-0.5 flex-shrink-0"></i>
+          <div class="flex-1">
+            <h4 class="font-bold text-red-700 mb-2">请修正以下错误：</h4>
+            <ul class="space-y-1">
+              <li v-if="formErrors.name" class="text-sm text-red-600 flex items-center gap-2">
+                <i class="fas fa-circle text-[4px]"></i>
+                <span>{{ formErrors.name }}</span>
+              </li>
+              <li v-if="formErrors.url" class="text-sm text-red-600 flex items-center gap-2">
+                <i class="fas fa-circle text-[4px]"></i>
+                <span>{{ formErrors.url }}</span>
+              </li>
+              <li v-if="formErrors.category" class="text-sm text-red-600 flex items-center gap-2">
+                <i class="fas fa-circle text-[4px]"></i>
+                <span>{{ formErrors.category }}</span>
+              </li>
+              <li v-if="formErrors.desc" class="text-sm text-red-600 flex items-center gap-2">
+                <i class="fas fa-circle text-[4px]"></i>
+                <span>{{ formErrors.desc }}</span>
+              </li>
+              <li v-if="formErrors.tags" class="text-sm text-red-600 flex items-center gap-2">
+                <i class="fas fa-circle text-[4px]"></i>
+                <span>{{ formErrors.tags }}</span>
+              </li>
+            </ul>
+          </div>
+          <button @click="clearErrors" class="text-red-400 hover:text-red-600 flex-shrink-0">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </Transition>
+    <!-- 表单区域 -->
     <div class="flex gap-6 items-start">
       <div class="flex-1 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg border border-white/60">
-        <!-- 左侧内容保持不变 -->
+        <!-- 左侧内容区域 -->
+        <!-- 图标上传 -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">图标:</label>
           <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 group overflow-hidden relative">
-            <img v-if="form.icon" :src="form.icon" class="w-full h-full object-cover">
+            <img v-if="form.icon" :src="form.icon" alt='' class="w-full h-full object-cover">
             <i v-else class="fas fa-plus text-3xl text-gray-400 group-hover:text-gray-600"></i>
-            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer">
+            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" @change="handleIconUpload" accept="image/*">
           </div>
         </div>
+        <!-- 工具信息输入 -->
         <div class="mb-4">
-          <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
+          <div
+            class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
             <i class="fas fa-bars text-gray-400"></i>
-            <input v-model="form.name" type="text" placeholder="工具名称" class="bg-transparent border-none outline-none flex-1 text-gray-700 font-medium">
+            <input v-model="form.name" type="text" placeholder="工具名称"
+              class="bg-transparent border-none outline-none flex-1 text-gray-700 font-medium">
           </div>
         </div>
+        <!-- 工具链接输入 -->
         <div class="mb-4 relative">
-          <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
+          <div
+            class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 ring-blue-100 transition-all">
             <i class="fas fa-link text-gray-400"></i>
-            <input v-model="form.url" type="text" placeholder="https://example.com" class="bg-transparent border-none outline-none flex-1 text-gray-700">
+            <input v-model="form.url" type="text" placeholder="https://example.com"
+              class="bg-transparent border-none outline-none flex-1 text-gray-700">
           </div>
-          <button
-            @click="handleAutoFill"
-            :disabled="isAnalyzing"
+          <button @click="handleAutoFill" :disabled="isAnalyzing"
             class="absolute right-1 top-1 bottom-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white px-4 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
             <i v-if="isAnalyzing" class="fas fa-spinner fa-spin"></i>
             {{ isAnalyzing ? '分析中...' : '一键填写' }}
           </button>
         </div>
+        <!-- 工具描述 -->
         <div class="mb-4">
-          <div class="flex gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 transition-all">
+          <div
+            class="flex gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-500 transition-all">
             <i class="fas fa-info-circle text-gray-400 mt-1"></i>
             <div class="flex-1">
-               <input v-model="form.desc" type="text" placeholder="简介" class="w-full bg-transparent border-none outline-none text-gray-700 mb-1">
-               <div class="text-right text-xs text-gray-400">{{ form.desc.length }}/80</div>
+              <input v-model="form.desc" type="text" placeholder="简介"
+                class="w-full bg-transparent border-none outline-none text-gray-700 mb-1">
+              <div class="text-right text-xs text-gray-400">{{ form.desc.length }}/80</div>
             </div>
           </div>
         </div>
+        <!-- 工具使用说明 -->
         <div class="mb-4">
-          <textarea v-model="form.fullDesc" placeholder="工具使用说明..." class="w-full h-40 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus:border-blue-500 outline-none resize-none text-gray-700"></textarea>
+          <textarea v-model="form.fullDesc" placeholder="工具使用说明..."
+            class="w-full h-40 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus:border-blue-500 outline-none resize-none text-gray-700"></textarea>
         </div>
       </div>
 
       <!-- 右侧边栏 - 优化布局 -->
       <div class="w-80 flex-shrink-0">
-        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24 flex flex-col h-[38.2rem]">
+        <div
+          class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/60 sticky top-24 flex flex-col h-[38.2rem]">
           <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-cog"></i> 工具选项
           </h4>
@@ -69,7 +119,8 @@
             <div class="mb-4">
               <label class="text-xs text-gray-500 mb-1 block">分类</label>
               <div class="relative">
-                <select v-model="form.category" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 appearance-none outline-none focus:border-blue-500 text-sm">
+                <select v-model="form.category"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 appearance-none outline-none focus:border-blue-500 text-sm">
                   <option value="" disabled selected>选择分类</option>
                   <option v-for="cat in ['软件开发', '项目协作', '个人提升', '论文阅读']" :key="cat" :value="cat">{{ cat }}</option>
                 </select>
@@ -98,12 +149,8 @@
               <div class="mb-3">
                 <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                   <i class="fas fa-search text-gray-400 text-xs"></i>
-                  <input
-                    v-model="tagSearch"
-                    type="text"
-                    placeholder="搜索标签..."
-                    class="bg-transparent border-none outline-none flex-1 text-xs placeholder-gray-400"
-                  >
+                  <input v-model="tagSearch" type="text" placeholder="搜索标签..."
+                    class="bg-transparent border-none outline-none flex-1 text-xs placeholder-gray-400">
                 </div>
               </div>
 
@@ -118,7 +165,7 @@
                       :class="[
                         'cursor-pointer transition-all duration-200',
                         'inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs border',
-                        selectedTags.includes(tag.id)
+                        selectedTags.indexOf(tag.id) !== -1
                           ? tag.color + ' border-transparent'
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                       ]"
@@ -135,7 +182,7 @@
                         <span v-if="tag.id === 'general'" class="text-[10px] text-gray-500">(必选)</span>
                       </span>
                       <i
-                        v-if="selectedTags.includes(tag.id)"
+                        v-if="selectedTags.indexOf(tag.id) !== -1"
                         class="fas fa-check text-[10px] ml-1"
                       ></i>
                     </label>
@@ -155,20 +202,13 @@
                   <span>已选标签 ({{ selectedTags.length }}个)</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
-                  <span
-                    v-for="tagId in selectedTags"
-                    :key="tagId"
-                    :class="[
-                      'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs',
-                      getTagById(tagId).color
-                    ]"
-                  >
+                  <span v-for="tagId in selectedTags" :key="tagId" :class="[
+                    'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs',
+                    getTagById(tagId).color
+                  ]">
                     {{ getTagById(tagId).name }}
-                    <i
-                      v-if="tagId !== 'general'"
-                      @click="removeTag(tagId)"
-                      class="fas fa-times text-[10px] cursor-pointer hover:scale-110 transition-transform"
-                    ></i>
+                    <i v-if="tagId !== 'general'" @click="removeTag(tagId)"
+                      class="fas fa-times text-[10px] cursor-pointer hover:scale-110 transition-transform"></i>
                   </span>
                 </div>
               </div>
@@ -177,7 +217,7 @@
               <div class="mt-3 text-xs text-gray-400">
                 <i class="fas fa-exclamation-circle mr-1"></i>
                 请至少选择一个标签
-                <div v-if="!selectedTags.includes('general')" class="text-red-500 font-medium mt-1">
+                <div v-if="selectedTags.indexOf('general') === -1" class="text-red-500 font-medium mt-1">
                   ⚠️ 必须包含"通用"标签
                 </div>
               </div>
@@ -186,7 +226,8 @@
 
           <!-- 提交按钮 - 固定在底部 -->
           <div class="pt-4 border-t border-gray-100">
-            <button @click="submit" :disabled="isSubmitting" class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-100 disabled:shadow-none disabled:opacity-70">
+            <button @click="submit" :disabled="isSubmitting"
+              class="w-full bg-[#bf1e2e] hover:bg-[#a01825] text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-100 disabled:shadow-none disabled:opacity-70">
               <i class="fas fa-file-export"></i> 提交审核
             </button>
           </div>
@@ -198,17 +239,17 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useToolsStore } from '@/store/toolsStore'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { ElMessage } from 'element-plus'
 import { predefinedTags } from '@/data/tool/tags'
-import { storeToRefs } from 'pinia'
 // import { HttpManager } from '@/api'
 
-const toolsStore = useToolsStore()
+// 持久化存储 Key（统一管理）
+const DRAFT_KEY = 'TOOL_SUBMIT_DRAFT'; // 表单草稿 Key
 
-const {
-  isAuthenticated // 是否登录
-} = storeToRefs(toolsStore)
+const store = useStore()
+
+const isAuthenticated = computed(() => store.getters.isAuthenticated)
 
 // 一、响应式数据定义
 const isAnalyzing = ref(false)
@@ -219,7 +260,7 @@ const form = reactive({
   desc: '',
   fullDesc: '',
   category: '',
-  type: 'external'
+  type: 'internal'
 })
 const isSubmitting = ref(false)
 // 标签相关状态
@@ -231,7 +272,7 @@ const formErrors = reactive({})
 // 二、计算属性
 // 1. 通过搜索过滤后的标签，未搜索时显示常用标签
 const filteredTags = computed(() => {
-  const searchTerm = tagSearch.value.toLowerCase()
+  const searchTerm = String(tagSearch.value || '').toLowerCase()
 
   if (searchTerm) {
     return predefinedTags.filter(tag =>
@@ -250,15 +291,7 @@ const filteredTags = computed(() => {
 const getTagById = (tagId) => {
   return predefinedTags.find(tag => tag.id === tagId) || { name: tagId, color: 'bg-gray-100' }
 }
-// 2. 标签选择变更时激活的函数（绑定方法）
-const handleTagChange = () => {
-  // 确保至少有一个标签被选中
-  if (selectedTags.value.length === 0) {
-    selectedTags.value = ['general']
-    ElMessage.warning('请至少选择一个标签')
-  }
-}
-// 3. 取消选择标签
+// 2. 取消选择标签
 const removeTag = (tagId) => {
   if (tagId === 'general') {
     ElMessage.warning('"通用"标签是必选项，不能移除')
@@ -272,17 +305,23 @@ const removeTag = (tagId) => {
 
   selectedTags.value = selectedTags.value.filter(id => id !== tagId)
 }
-// 4. 表单验证
+// 3. 表单验证
 const validateForm = () => {
-  formErrors.name = !form.name.trim() ? '请输入工具名称' : ''
-  formErrors.url = !form.url.trim() ? '请输入工具链接' : ''
+  formErrors.name = !(form.name || '').trim() ? '请输入工具名称' : ''
+  formErrors.url = !(form.url || '').trim() ? '请输入工具链接' : ''
   formErrors.category = !form.category ? '请选择分类' : ''
-  formErrors.desc = !form.desc.trim() ? '请输入简介' : form.desc.length > 80 ? '简介不能超过80字' : ''
+  formErrors.desc = !(form.desc || '').trim() ? '请输入简介' : form.desc.length > 80 ? '简介不能超过80字' : ''
+
+  // 对url进行简单格式验证
+  const urlPattern = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/
+  if (form.url && !urlPattern.test(form.url)) {
+    formErrors.url = '请输入有效的链接（必须以http://或https://开头）'
+  }
 
   // 标签验证
   if (selectedTags.value.length === 0) {
     formErrors.tags = '请至少选择一个标签'
-  } else if (!selectedTags.value.includes('general')) {
+  } else if (selectedTags.value.indexOf('general') === -1) {
     formErrors.tags = '必须包含"通用"标签'
   } else {
     formErrors.tags = ''
@@ -290,16 +329,57 @@ const validateForm = () => {
 
   return !Object.values(formErrors).some(error => error)
 }
-// 5. 自动填充（未实现，后续需要调用AI + 爬虫）
+// 4.1 清除错误提示
+const clearErrors = () => {
+  Object.keys(formErrors).forEach(key => {
+    formErrors[key] = ''
+  })
+}
+// 4.2 错误提示动画钩子
+const onErrorEnter = (el) => {
+  el.style.opacity = '0'
+  el.style.transform = 'translateY(-10px)'
+  el.style.transition = 'all 0.3s ease-out'
+
+  // 触发重排，使浏览器应用初始状态
+  el.offsetHeight
+
+  el.style.opacity = '1'
+  el.style.transform = 'translateY(0)'
+}
+
+const onErrorLeave = (el) => {
+  el.style.transition = 'all 0.3s ease-out'
+  el.style.opacity = '0'
+  el.style.transform = 'translateY(-10px)'
+}
+// 5. 图标上传处理
+const handleIconUpload = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请上传图片文件')
+    return
+  }
+  // 读取文件并转为Base64
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    form.icon = event.target.result  // 赋值给form.icon实现预览
+  }
+  reader.readAsDataURL(file)
+}
+// 6. 自动填充（未实现，后续需要调用AI + 爬虫）
 const handleAutoFill = async () => {
-  if (!form.url.trim()) {
+  if (!(form.url || '').trim()) {
     ElMessage.warning('请先填写链接')
     return
   }
 
   isAnalyzing.value = true
   try {
-    const data = await toolsStore.analyzeUrl(form.url)
+    // 使用 Vuex action
+    const data = await store.dispatch('analyzeUrl', form.url)
     form.name = data.name
     form.desc = data.desc.substring(0, 80)
     form.fullDesc = data.desc
@@ -311,7 +391,7 @@ const handleAutoFill = async () => {
     isAnalyzing.value = false
   }
 }
-// 6. 提交
+// 7. 提交
 const submit = async () => {
   try {
     if (!validateForm()) {
@@ -326,17 +406,17 @@ const submit = async () => {
     // 准备数据
     const submitData = {
       ...form, // 解包获取副本，对于引用类型非常需要注意的地方（但是仅是浅拷贝，不过好在form的属性中无引用类型）
-      tags: [...selectedTags.value] // 数组也是引用类型，需要解包
-    }
-    // 验证标签
-    if (submitData.tags.length === 0) {
-      throw new Error('请至少选择一个标签')
+      tags: [...selectedTags.value], // 数组也是引用类型，需要解包
+      createTime: new Date().toISOString() // 增加提交时间（可选）
     }
 
     // const response = await HttpManager.submitTool(submitData)
     const response = await mockSubmitTool(submitData)
 
     if (response.code === 200) {
+      // 清空本地草稿
+      localStorage.removeItem(DRAFT_KEY);
+      
       ElMessage.success(response.message || '提交成功，等待管理员审核')
 
       // 重置表单
@@ -356,28 +436,62 @@ const submit = async () => {
   }
 }
 // 为方法6模拟后端API请求使用
-// const mockSubmitTool = async (submitData) => {
-//   // 返回一个Promise，模拟异步请求
-//   return new Promise((resolve) => {
-//     // 模拟网络延迟（1.5秒）
-//     setTimeout(() => {
-//       // 模拟响应数据（默认成功，也可以添加随机逻辑模拟失败）
-//       // 如需模拟失败，可将code改为非200，比如：{ code: 500, message: '服务器内部错误' }
-//       const mockResponse = {
-//         code: 200,
-//         message: '提交成功，等待管理员审核'
-//       }
-//
-//       // 【可选】添加随机成功/失败逻辑，更贴近真实场景
-//       // const isSuccess = Math.random() > 0.2; // 80%成功率
-//       // const mockResponse = isSuccess
-//       //   ? { code: 200, message: '提交成功，等待管理员审核' }
-//       //   : { code: 500, message: '模拟提交失败：服务器忙，请稍后再试' };
-//
-//       resolve(mockResponse)
-//     }, 1500) // 1500ms = 1.5秒延迟
-//   })
-// }
+const mockSubmitTool = async () => {
+  // 实际上会传一个参数：submitData
+  // 返回一个Promise，模拟异步请求
+  return new Promise((resolve) => {
+    // 模拟网络延迟（1.5秒）
+    setTimeout(() => {
+      // 模拟响应数据（默认成功，也可以添加随机逻辑模拟失败）
+      // 如需模拟失败，可将code改为非200，比如：{ code: 500, message: '服务器内部错误' }
+      const mockResponse = {
+        code: 200,
+        message: '提交成功，等待管理员审核'
+      }
+
+      // 【可选】添加随机成功/失败逻辑，更贴近真实场景
+      // const isSuccess = Math.random() > 0.2; // 80%成功率
+      // const mockResponse = isSuccess
+      //   ? { code: 200, message: '提交成功，等待管理员审核' }
+      //   : { code: 500, message: '模拟提交失败：服务器忙，请稍后再试' };
+
+      resolve(mockResponse)
+    }, 1500) // 1500ms = 1.5秒延迟
+  })
+}
+// 8. 自动保存草稿到本地
+const saveDraft = () => {
+  try {
+    const draft = {
+      form: { ...form }, // 复制form对象（避免引用）
+      selectedTags: [...selectedTags.value] // 复制标签数组
+    };
+    // 仅保存非空的有效草稿（可选：过滤空值）
+    if (form.name || form.url || form.description || selectedTags.value.length > 1) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }
+  } catch (e) {
+    console.error('保存表单草稿失败：', e);
+  }
+};
+// 9. 加载本地草稿
+const loadDraft = () => {
+  try {
+    const draftStr = localStorage.getItem(DRAFT_KEY);
+    if (draftStr) {
+      const draft = JSON.parse(draftStr);
+      // 恢复表单数据（合并，保留现有非空值）
+      Object.assign(form, draft.form || {});
+      // 恢复选中的标签（兜底默认值）
+      selectedTags.value = draft.selectedTags?.length ? draft.selectedTags : ['general'];
+      ElMessage.info('已恢复上次未提交的表单草稿');
+    }
+  } catch (e) {
+    console.error('加载表单草稿失败：', e);
+    // 加载失败时清空无效草稿
+    localStorage.removeItem(DRAFT_KEY);
+  }
+};
 
 // 四、监听器
 // 1. 工具分类自动推荐标签
@@ -395,16 +509,31 @@ watch(() => form.category, (newCategory) => {
 
     // 保留已选标签，添加推荐的标签（不重复）
     recommended.forEach(tagId => {
-      if (!selectedTags.value.includes(tagId) && predefinedTags.some(tag => tag.id === tagId)) {
+      if (selectedTags.value.indexOf(tagId) === -1 && predefinedTags.some(tag => tag.id === tagId)) {
         selectedTags.value.push(tagId)
       }
     })
   }
 })
-
+//  2. 标签选择，确保至少有一个标签被选中
+watch(selectedTags, (newTags) => {
+  // 确保至少有一个标签被选中
+  if (newTags.length === 0) {
+    selectedTags.value = ['general']
+    ElMessage.warning('请至少选择一个标签')
+  }
+})
+// 3. 监听表单和标签变化，自动保存草稿（深度监听form的嵌套属性）
+watch(
+  [() => form, selectedTags], // 监听form（需包装成函数）和selectedTags
+  () => {
+    saveDraft(); // 变化时触发保存
+  },
+  { deep: true, immediate: false } // deep: true 监听form内部属性变化
+);
 // 五、生命周期函数
-onMounted(async () => {
-  console.log('ToolSubmit 组件被创建')
+onMounted(() => {
+  loadDraft()
 })
 
 onUnmounted(() => {
@@ -414,6 +543,39 @@ onUnmounted(() => {
 
 <style scoped>
 @import '@/assets/css/index.css';
+
+/* 错误提示动画 */
+.error-slide-enter-active,
+.error-slide-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.error-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.error-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 错误提示区域样式 */
+.error-alert {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* ::-webkit-scrollbar {
   width: 4px;

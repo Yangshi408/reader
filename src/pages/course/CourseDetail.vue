@@ -461,16 +461,37 @@ const goBack = () => {
   }
 }
 
-const toggleLike = () => {
+const toggleLike = async () => {
+  if (!isAuthenticated.value) {
+    try {
+      await ElMessageBox.confirm('请先登录以收藏课程', '提示', {
+        confirmButtonText: '去登录',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      await router.push('/')
+    } catch {
+      // 用户点击取消
+    }
+    return
+  }
+
   isLiked.value = !isLiked.value
   if (isLiked.value) {
     ElMessage.success('课程已加入收藏夹')
+    // 这里可以调用 API 添加收藏
   } else {
     ElMessage.info('已取消收藏')
+    // 这里可以调用 API 移除收藏
   }
 }
 
 const likeComment = (id) => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录以点赞评论')
+    return
+  }
+
   const comment = comments.value.find(c => c.id === id)
   if (comment) {
     if (comment.isLiked) {

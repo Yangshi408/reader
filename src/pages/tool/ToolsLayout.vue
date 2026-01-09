@@ -71,10 +71,10 @@
       <div class="mt-auto border-t border-gray-100 pt-2 px-2">
         <!-- 工具提交按钮 - 收起时居中 -->
         <button
-          :class="['flex items-center rounded-lg transition-colors cursor-pointer',
+          :class="['w-full flex items-center rounded-lg transition-colors',
             isCollapsed ? 'justify-center px-3 py-3' : 'px-4 py-3',
             route.name === 'ToolSubmit' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50',
-            disableToolSubmit ? 'opacity-50 cursor-not-allowed' : '']"
+            disableToolSubmit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']"
           :disabled="disableToolSubmit"
           @click="router.push('/tools/submit')"
         >
@@ -102,15 +102,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useToolsStore } from '@/store/toolsStore'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useStore } from 'vuex'  // 替换 Pinia 导入
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
-import { storeToRefs } from 'pinia'
 
-const store = useToolsStore()
-const { categories, disableToolSubmit } = storeToRefs(store)
+const store = useStore()  // 替换 useToolsStore
 const router = useRouter()
 const route = useRoute()
+
+const categories = ['软件开发', '项目协作', '个人提升', '论文阅读']
+const disableToolSubmit = computed(() => store.state.tools.disableToolSubmit)
 
 // 一、变量声明
 // 侧边栏收起状态
@@ -118,7 +119,7 @@ const isCollapsed = ref(false)
 
 // 二、计算属性
 const showBackButton = computed(() => {
-  return route.name === 'ToolDetail' || route.name === 'ToolSubmit' || route.name !== 'ToolsList'
+  return store.state.tools.showBackButton
 })
 
 // 三、方法
@@ -155,7 +156,23 @@ const handleKeyDown = (e) => {
   }
 }
 
-// 四、生命周期函数
+// 四、监听器
+// 1. 监听路由变化，自动管理返回按钮状态
+watch(() => route.name, (newRouteName) => {
+  if (newRouteName === 'ToolDetail') {
+    // 进入详情页时，先隐藏返回按钮
+    store.commit('setShowBackButton', false)
+  } else if (newRouteName === 'ToolSubmit') {
+    // 进入提交页面时，直接显示返回按钮（提交页不需要加载）
+    console.log('进入工具提交页面，显示返回按钮')
+    store.commit('setShowBackButton', true)
+  } else {
+    // 其他页面隐藏返回按钮
+    store.commit('setShowBackButton', false)
+  }
+}, { immediate: true })
+
+// 五、生命周期函数
 // 1. 检查localStorage中的侧边栏状态
 onMounted(async () => {
   const savedState = localStorage.getItem('sidebarCollapsed')
@@ -164,23 +181,13 @@ onMounted(async () => {
   }
 
   window.addEventListener('keydown', handleKeyDown)
-
-  // 如果分类数据为空，则获取工具列表（这同时会填充分类）
-  // 这个操作主要是避免用户在工具提交页面或详情页刷新浏览器导致数据丢失（最开始是在ToolsList.vue页面加载时加载数据的，但是会出现上述的问题，故改到整个页面框架中加载数据）
-  if (categories.value.length === 0) {
-    try {
-      await store.fetchTools({}, true)
-    } catch (error) {
-      console.error('Failed to fetch tools:', error)
-    }
-  }
 })
 // 2. 清理事件监听器
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-// 五、路由守卫
+// 六、路由守卫
 // 当路由更新时（在同一布局内的页面切换），中断之前的请求
 onBeforeRouteUpdate((to, from, next) => {
   // 如果是从详情页跳到其他页面，中断详情页的请求
