@@ -61,76 +61,6 @@
       </div>
 
       <!-- 用户菜单 -->
-      <div class="relative" ref="avatarRef">
-
-        <!-- 头像按钮 -->
-        <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
-
-          <!-- 情况 1: 已登录 且 有头像图片 -->
-          <template v-if="isAuthenticated && userInfo?.avatar">
-            <img
-              :src="userInfo.avatar"
-              class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
-              alt="User Avatar"
-            >
-            <!-- 在线状态绿点 -->
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-          </template>
-
-          <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
-          <template v-else-if="isAuthenticated">
-            <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
-              {{ userInitial }}
-            </div>
-            <!-- 在线状态绿点 -->
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-          </template>
-
-          <!-- 情况 3: 游客 (显示 "游") -->
-          <template v-else>
-            <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
-              {{ userInitial }}
-            </div>
-          </template>
-
-        </div>
-
-        <!-- 下拉菜单 -->
-        <div v-if="showUserMenu"
-             class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
-
-          <!-- 已登录菜单内容 -->
-          <template v-if="isAuthenticated">
-            <div class="px-4 py-3 border-b border-gray-50">
-              <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
-              <p class="text-xs text-gray-400 truncate">已登录</p>
-            </div>
-            <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-              <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
-            </router-link>
-            <div class="h-px bg-gray-100 my-1"></div>
-            <p @click="handleLogout" class="cursor-pointer px-4 py-3 text-red-500 hover:bg-red-50 transition-colors">
-              <i class="fas fa-sign-out-alt mr-2"></i>退出登录
-            </p>
-          </template>
-
-          <!-- 游客菜单内容 -->
-          <template v-else>
-            <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
-              当前身份：游客
-            </div>
-            <router-link to="/profile" class="block px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-              <i class="fas fa-user mr-2 text-blue-500"></i>个人中心
-            </router-link>
-            <div class="h-px bg-gray-100 my-1"></div>
-            <div @click="goToLogin" class="block px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium cursor-pointer transition-colors">
-              <i class="fas fa-sign-in-alt mr-2"></i>返回登录
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <!-- 用户菜单 -->
         <div class="relative" ref="avatarRef">
 
           <!-- 头像按钮 -->
@@ -390,7 +320,7 @@ const handleSearch = () => {
     // 模拟本站搜索加载效果
     isSearching.value = true
     hasSearched.value = false // 先重置结果状态
-
+    
     setTimeout(() => {
       isSearching.value = false
       hasSearched.value = true
@@ -696,10 +626,7 @@ onUnmounted(() => document.removeEventListener('click', closeDropdowns))
   color: #0066ff;
   border-radius: 999px;
   font-weight: 600;
-  color: #4b5563; /* gray-600 */
-  white-space: nowrap;
-  user-select: none;
-  transition: color 0.2s;
+  transition: all 0.3s;
 }
 .btn-primary-outline:hover {
   background: #0066ff;

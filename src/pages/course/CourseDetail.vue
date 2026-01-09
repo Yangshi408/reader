@@ -209,14 +209,14 @@
 
         <div class="flex bg-gray-100 rounded-lg p-1 text-xs font-medium">
           <button
-            @click="sortType = 'hot'"
+            @click="changeSort('hot')"
             class="px-3 py-1.5 rounded-md transition-all duration-300"
             :class="sortType === 'hot' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
           >
             按热度
           </button>
           <button
-            @click="sortType = 'time'"
+            @click="changeSort('time')"
             class="px-3 py-1.5 rounded-md transition-all duration-300"
             :class="sortType === 'time' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
           >
@@ -225,9 +225,61 @@
         </div>
       </div>
 
-      <div class="space-y-6">
+      <div class="mb-10">
+        <div v-if="isAuthenticated" class="flex gap-4 items-start animate-fade-in">
+          <img
+            :src="userInfo.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'"
+            class="w-10 h-10 rounded-full border border-gray-200 shadow-sm shrink-0 bg-white"
+          >
+          <div class="flex-1">
+            <div class="relative group">
+              <textarea
+                v-model="newComment"
+                rows="3"
+                placeholder="分享你的课程评价、考试经验或学习心得..."
+                class="w-full p-4 rounded-2xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none text-sm text-gray-700"
+              ></textarea>
+              <div class="absolute bottom-3 right-3">
+                 <span class="text-xs text-gray-400" :class="{ 'text-red-500': newComment.length > 300 }">
+                   {{ newComment.length }}/300
+                 </span>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3">
+              <button
+                class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                :disabled="!newComment.trim()"
+                @click="submitComment"
+              >
+                <i class="fas fa-paper-plane"></i> 发布评论
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="bg-gray-50 rounded-2xl p-8 border border-gray-100 text-center relative overflow-hidden group">
+          <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
+          <div class="relative z-10 flex flex-col items-center gap-3">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl mb-1">
+              <i class="fas fa-lock"></i>
+            </div>
+            <h3 class="text-gray-800 font-bold">登录后参与讨论</h3>
+            <p class="text-gray-500 text-sm max-w-sm">
+              登录账号即可发布课程评价，与其他同学交流学习心得。
+            </p>
+            <button
+              class="mt-2 px-8 py-2.5 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all active:scale-95"
+              @click="goToLogin"
+            >
+              立即登录
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6" id="comment-list-top">
         <div
-          v-for="comment in sortedComments"
+          v-for="comment in paginatedComments"
           :key="comment.id"
           class="flex gap-4 animate-fade-in group"
         >
@@ -260,15 +312,42 @@
               </button>
             </div>
 
-            <p class="text-gray-600 text-sm leading-relaxed">
+            <p class="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
               {{ comment.content }}
             </p>
           </div>
         </div>
 
-        <div class="text-center pt-2">
-          <button class="text-gray-400 text-sm hover:text-blue-600 transition-colors flex items-center justify-center gap-1 mx-auto">
-            查看更多评论 <i class="fas fa-chevron-down animate-bounce text-xs mt-0.5"></i>
+        <div v-if="comments.length === 0" class="text-center py-10 text-gray-400">
+          <i class="far fa-comment-alt text-2xl mb-2 opacity-30"></i>
+          <p class="text-sm">还没有人评论，快来抢沙发吧~</p>
+        </div>
+
+        <div v-if="comments.length > 0 && totalPages > 1" class="flex justify-center items-center gap-2 pt-4">
+          <button 
+            @click="changePage(currentPage - 1)" 
+            :disabled="currentPage === 1"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition-all bg-white"
+          >
+            <i class="fas fa-chevron-left text-xs"></i>
+          </button>
+
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            @click="changePage(page)"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all"
+            :class="currentPage === page ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-600'"
+          >
+            {{ page }}
+          </button>
+
+          <button 
+            @click="changePage(currentPage + 1)" 
+            :disabled="currentPage === totalPages"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-blue-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition-all bg-white"
+          >
+            <i class="fas fa-chevron-right text-xs"></i>
           </button>
         </div>
       </div>
@@ -278,16 +357,32 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
+const store = useStore()
 
-// 1. 状态管理
+// 1. 用户状态
+const isAuthenticated = computed(() => store.getters.isLoggedIn)
+const userInfo = computed(() => store.getters.userInfo)
+
+const goToLogin = () => {
+  router.push({ name: 'Login', query: { redirect: route.fullPath } })
+}
+
+// 2. 状态管理
 const isLiked = ref(false)
-const sortType = ref('hot') // 'hot' | 'time'
+const sortType = ref('hot')
+const newComment = ref('')
 
-// 2. Mock 数据
+// 分页状态 (新增)
+const currentPage = ref(1)
+const pageSize = 5
+
+// 3. Mock 数据
 const courseInfo = ref({
   name: '面向对象程序设计',
   teacher: '张伟',
@@ -313,14 +408,21 @@ const resources = ref({
   ]
 })
 
+// 增加 Mock 评论以展示分页效果
 const comments = ref([
-  { id: 1, user: '秃头学长', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', time: '2023-12-20', content: '这门课的作业量真的很大！尤其是大作业，建议大家从期中就开始构思，不然期末会通宵写代码。老师人很好，给分比较公正。', likes: 124, isLiked: false },
-  { id: 2, user: '萌新小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', time: '2024-01-05', content: '求问各位学长学姐，期末考试重点考不考 STL 源码分析呀？我看 PPT 上讲了很多。', likes: 5, isLiked: false },
-  { id: 3, user: 'CodeMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', time: '2023-11-15', content: '推荐大家去看《Effective C++》，配合这门课食用效果更佳。', likes: 45, isLiked: true }
+  { id: 1, user: '秃头学长', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', time: '2023-12-20', content: '这门课的作业量真的很大！建议大家从期中就开始构思大作业。', likes: 124, isLiked: false },
+  { id: 2, user: '萌新小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', time: '2024-01-05', content: '求问各位学长学姐，期末考试重点考不考 STL 源码分析呀？', likes: 5, isLiked: false },
+  { id: 3, user: 'CodeMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', time: '2023-11-15', content: '推荐大家去看《Effective C++》，配合这门课食用效果更佳。', likes: 45, isLiked: true },
+  { id: 4, user: '路人甲', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack', time: '2023-10-01', content: '老师讲得很好，但是语速有点快，建议录音回去复习。', likes: 12, isLiked: false },
+  { id: 5, user: 'C++之神', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=God', time: '2023-09-20', content: '其实这门课只要掌握了多态的底层原理，其他都很简单。', likes: 88, isLiked: false },
+  { id: 6, user: '补考战士', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cry', time: '2024-02-10', content: '我又来重修了...大家一定要好好做实验啊！', likes: 2, isLiked: false },
+  { id: 7, user: '学霸君', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Smart', time: '2023-12-30', content: '期末复习资料我已经上传到资源区了，大家自取。', likes: 200, isLiked: true },
+  { id: 8, user: '潜水员', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Fish', time: '2023-11-05', content: '冒个泡，这门课给分怎么样？', likes: 0, isLiked: false }
 ])
 
-// 3. 计算属性：排序逻辑
-const sortedComments = computed(() => {
+// 4. 计算属性
+// 先排序
+const sortedAllComments = computed(() => {
   const list = [...comments.value]
   if (sortType.value === 'hot') {
     return list.sort((a, b) => b.likes - a.likes)
@@ -329,7 +431,28 @@ const sortedComments = computed(() => {
   }
 })
 
-// 4. 方法
+// 再分页 (新增)
+const totalPages = computed(() => Math.ceil(sortedAllComments.value.length / pageSize))
+
+const paginatedComments = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return sortedAllComments.value.slice(start, end)
+})
+
+// 5. 方法
+const changePage = (page) => {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  // 切换页面时，平滑滚动到评论列表顶部
+  // 实际使用时可以定位到 id="comment-list-top"
+}
+
+const changeSort = (type) => {
+  sortType.value = type
+  currentPage.value = 1 // 切换排序重置页码
+}
+
 const goBack = () => {
   if (window.history.length > 1) {
     router.go(-1)
@@ -361,8 +484,6 @@ const likeComment = (id) => {
 }
 
 const goToUpload = () => {
-  // 假设当前课程ID为 123 (实际应从 API 获取的 id 字段取，这里暂用 123 模拟)
-  // 如果你的 courseInfo 中包含 id，请使用 courseInfo.value.id
   const currentCourseId = '123'
   router.push({
     name: 'CourseSubmit',
@@ -371,6 +492,33 @@ const goToUpload = () => {
       courseName: courseInfo.value.name
     }
   })
+}
+
+const submitComment = () => {
+  if (!isAuthenticated.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  
+  if (!newComment.value.trim()) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
+
+  const mockNewComment = {
+    id: Date.now(),
+    user: userInfo.value.nickname || userInfo.value.username || '我',
+    avatar: userInfo.value.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
+    time: new Date().toLocaleDateString(),
+    content: newComment.value,
+    likes: 0,
+    isLiked: false
+  }
+
+  comments.value.unshift(mockNewComment)
+  newComment.value = ''
+  currentPage.value = 1 // 发布评论后跳回第一页
+  ElMessage.success('评论发布成功！')
 }
 
 onMounted(() => {
@@ -388,5 +536,11 @@ onMounted(() => {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 </style>
