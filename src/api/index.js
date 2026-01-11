@@ -151,43 +151,32 @@ const HttpManager = {
   toggleCommentLike: (toolId, commentId) => post(`tools/${toolId}/comments/${commentId}/like`), // 点赞/取消点赞评论
 
   // =======================> 课程 API
-  // 课程基础信息
-  getCourses: (params) => get('course', params), // 获取课程列表
-  getCourseDetail: (courseId) => get(`course/${courseId}`), // 获取课程详情
-  submitCourse: (params) => post('course/submit', params), // 提交课程
-  searchCourses: (params) => get('course/search', params), // 搜索课程
-  addCourseView: (courseId) => post(`course/${courseId}/view`), // 增加课程浏览量
+  // 1. 获取课程列表
+  getCourses: (params) => get('courses', params),
 
-  // 课程收藏相关
-  toggleCourseCollection: (courseId, resourceType) => post(`course/${courseId}/collections`, { resourceType }), // 收藏课程
-  removeCourseCollection: (courseId, resourceType) => deletes(`course/${courseId}/collections`, { resourceType }), // 取消收藏课程
+  // 2. 获取课程详情
+  getCourseDetail: (courseId) => get(`courses/${courseId}`),
+  
+  // 3. 获取课程下的资源列表
+  getCourseResources: (courseId) => get(`courses/${courseId}/resources`),
 
-  // 课程点赞相关
-  toggleCourseLike: (courseId) => post(`course/${courseId}/like`), // 点赞课程
-  removeCourseLike: (courseId) => deletes(`course/${courseId}/like`), // 取消点赞课程
+  // 4. 获取课程评论列表
+  getCourseComments: (courseId) => get(`courses/${courseId}/comments`),
 
-  // 课程评论相关
-  getCourseComments: (courseId) => get(`course/${courseId}/comments`), // 获取课程评论
-  addCourseComment: (courseId, params) => post(`course/${courseId}/comments`, params), // 发表课程评论
-  deleteCourseComment: (courseId, commentId) => deletes(`course/${courseId}/comments/${commentId}`), // 删除课程评论
-  toggleCourseCommentLike: (courseId, commentId) => post(`course/${courseId}/comments/${commentId}/like`), // 点赞/取消点赞课程评论
+  // 5. 发表课程评论
+  addCourseComment: (courseId, params) => post(`courses/${courseId}/comments`, params),
 
-  // 课程资源相关
-  getCourseResources: (courseId) => get(`course/${courseId}/resources`), // 获取课程资源
-  addCourseResource: (courseId, params) => post(`course/${courseId}/resources`, params), // 添加课程资源
+  // 6. 删除课程评论
+  deleteCourseComment: (courseId, commentId) => deletes(`courses/${courseId}/comments/${commentId}`),
+  
+  // 7. 收藏课程
+  toggleCourseLike: (courseId) => post(`courses/${courseId}/like`),
 
-  // 课程学习相关
-  addCourseToLearningPlan: (courseId) => post(`course/${courseId}/learning-plan`), // 加入学习计划
-  removeCourseFromLearningPlan: (courseId) => deletes(`course/${courseId}/learning-plan`), // 从学习计划移除
-  getCourseProgress: (courseId) => get(`course/${courseId}/progress`), // 获取学习进度
-  updateCourseProgress: (courseId, chapterId) => put(`course/${courseId}/progress/${chapterId}`), // 更新学习进度
+  // 8. 点赞/取消点赞课程评论
+  toggleCourseCommentLike: (courseId, commentId) => post(`courses/${courseId}/comments/${commentId}/like`),
 
-  // 课程评价相关
-  addCourseRating: (courseId, params) => post(`course/${courseId}/rating`, params), // 添加课程评分
-  updateCourseRating: (courseId, ratingId, params) => put(`course/${courseId}/rating/${ratingId}`, params), // 更新课程评分
-
-  // 课程分析相关
-  analyzeCourseUrl: (url) => post('course/analyze', { url }), // 分析课程链接
+  // 9. 发布课程资源
+  addCourseResource: (params) => post('courses/resources', params),
 
   // =======================> 项目 API
   getProjects: (params) => get('projects/profile', params),

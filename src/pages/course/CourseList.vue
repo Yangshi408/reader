@@ -14,7 +14,7 @@
 
       <div class="relative w-full max-w-2xl group mx-4">
         <div class="search-bar-container">
-
+          
           <div class="engine-wrapper" ref="engineRef">
             <div class="engine-trigger" @click.stop="engineMenuOpen = !engineMenuOpen">
               <span>{{ currentEngineName }}</span>
@@ -61,7 +61,6 @@
       </div>
 
       <div class="flex items-center gap-6">
-        <!-- 筛选按钮 -->
         <div class="relative" ref="filterRef">
           <button @click="showFilter = !showFilter"
                   class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
@@ -69,7 +68,6 @@
           </button>
           <div v-if="showFilter" class="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl p-4 border border-gray-100 z-50 animate-pop-in max-h-[70vh] overflow-y-auto">
 
-            <!-- 排序方式 -->
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">排序方式</h4>
               <div class="flex gap-2">
@@ -80,7 +78,6 @@
               </div>
             </div>
 
-            <!-- 学期筛选 -->
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                 学期筛选
@@ -114,7 +111,6 @@
               </div>
             </div>
 
-            <!-- 课程类型筛选 -->
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                 课程类型
@@ -148,7 +144,6 @@
               </div>
             </div>
 
-            <!-- 教师筛选 -->
             <div class="mb-4">
               <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                 教师筛选
@@ -193,33 +188,26 @@
 
           </div>
         </div>
-        <!-- 用户菜单 -->
         <div class="relative" ref="avatarRef">
 
-          <!-- 头像按钮 -->
           <div @click="showUserMenu = !showUserMenu" class="cursor-pointer relative group">
 
-            <!-- 情况 1: 已登录 且 有头像图片 -->
             <template v-if="isAuthenticated && userInfo?.avatar">
               <img
                 :src="userInfo.avatar"
                 class="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform object-cover"
                 alt="User Avatar"
               >
-              <!-- 在线状态绿点 -->
               <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
             </template>
 
-            <!-- 情况 2: 已登录 但 无头像图片 (显示 "我") -->
             <template v-else-if="isAuthenticated">
               <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-blue-600 to-purple-600">
                 {{ userInitial }}
               </div>
-              <!-- 在线状态绿点 -->
               <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
             </template>
 
-            <!-- 情况 3: 游客 (显示 "游") -->
             <template v-else>
               <div class="w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform bg-gradient-to-br from-red-400 to-orange-400">
                 {{ userInitial }}
@@ -228,11 +216,9 @@
 
           </div>
 
-          <!-- 下拉菜单 -->
           <div v-if="showUserMenu"
                class="absolute right-0 top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-pop-in overflow-hidden">
 
-            <!-- 已登录菜单内容 -->
             <template v-if="isAuthenticated">
               <div class="px-4 py-3 border-b border-gray-50">
                 <p class="text-sm font-bold text-gray-800 truncate">{{ userInfo?.nickname || userInfo?.username || '用户' }}</p>
@@ -247,7 +233,6 @@
               </p>
             </template>
 
-            <!-- 游客菜单内容 -->
             <template v-else>
               <div class="px-4 py-3 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 cursor-default">
                 当前身份：游客
@@ -283,7 +268,11 @@
       </div>
     </div>
 
-    <div class="space-y-16">
+    <div v-if="isLoading" class="flex justify-center items-center py-20">
+      <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+    </div>
+
+    <div v-else class="space-y-16">
       <div
         v-for="semesterItem in groupedCourses"
         :key="semesterItem.key"
@@ -350,10 +339,10 @@
             >
               <div class="flex gap-4">
                 <span class="flex items-center gap-1 hover:text-blue-500">
-                  <i class="far fa-file-alt"></i> {{ course.resources }} 资料
+                  <i class="far fa-file-alt"></i> {{ course.resources || 0 }} 资料
                 </span>
                 <span class="flex items-center gap-1 hover:text-red-500">
-                  <i class="far fa-star"></i> {{ course.likes }}
+                  <i class="far fa-star"></i> {{ course.likes || 0 }}
                 </span>
               </div>
               <i
@@ -372,7 +361,7 @@
       </div>
 
       <div
-        v-if="groupedCourses.every((g) => g.list.length === 0)"
+        v-if="!isLoading && groupedCourses.every((g) => g.list.length === 0)"
         class="text-center py-20"
       >
         <div class="text-gray-400 mb-4">
@@ -391,6 +380,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
+import { HttpManager } from '@/api/index' // 引入API管理器
 
 const router = useRouter()
 const route = useRoute()
@@ -410,11 +400,14 @@ const engineRef = ref(null)
 const showFilter = ref(false)
 const filterRef = ref(null)
 const teacherFilterSearch = ref('')
-const allTeachers = computed(() => [...new Set(mockCourses.map(c => c.teacher))])
 const activeType = ref('全部')
 const courseTypes = ['全部', '公必', '专必', '专选', '公选']
 const showUserMenu = ref(false)
 const avatarRef = ref(null)
+
+// 数据相关
+const rawCourseList = ref([]) // 存储从接口获取的原始数据
+const isLoading = ref(false)  // 加载状态
 
 const activeFilters = ref({
   sort: '默认', // 默认排序
@@ -422,6 +415,8 @@ const activeFilters = ref({
   types: [], // 选中类型
   teachers: [] // 选中教师
 })
+
+const allTeachers = computed(() => [...new Set(rawCourseList.value.map(c => c.teacher))])
 
 // 计算属性：根据类型获取对应的样式
 const getTypeClass = (type) => {
@@ -506,7 +501,7 @@ const resetAllFilters = () => {
 
 // --- 修改原有的 filteredList 计算属性 ---
 const filteredList = computed(() => {
-  return mockCourses.filter((course) => {
+  return rawCourseList.value.filter((course) => {
     // 1. 关键词搜索
     const keyword = String(searchInput.value || '').toLowerCase()
     const matchKeyword = (searchEngine.value === 'local' && keyword)
@@ -533,16 +528,16 @@ const filteredList = computed(() => {
     // 排序逻辑
     switch (activeFilters.value.sort) {
       case '最多点赞':
-        return b.likes - a.likes
+        return (b.likes || 0) - (a.likes || 0)
       case '最多资料':
-        return b.resources - a.resources
+        return (b.resources || 0) - (a.resources || 0)
       case '学分最高':
-        return b.credit - a.credit
+        return (b.credit || 0) - (a.credit || 0)
       case '默认':
       default: {
-        const semCompare = a.semester.localeCompare(b.semester)
+        const semCompare = (a.semester || '').localeCompare(b.semester || '')
         if (semCompare !== 0) return semCompare
-        return a.code.localeCompare(b.code)
+        return (a.code || '').localeCompare(b.code || '')
       }
     }
   })
@@ -602,7 +597,7 @@ const handleSearch = () => {
     // 模拟本站搜索加载效果
     isSearching.value = true
     hasSearched.value = false // 先重置结果状态
-
+    
     setTimeout(() => {
       isSearching.value = false
       hasSearched.value = true
@@ -674,7 +669,7 @@ const closeDropdowns = (e) => {
   }
 }
 
-// --- 4. Mock 数据与分组 ---
+// --- 4. 样式配置 ---
 const colorMap = {
   公必: { bar: '#a855f7', text: '#9333ea', bg: '#f3e8ff', border: '#e9d5ff' },
   专必: { bar: '#3b82f6', text: '#2563eb', bg: '#dbeafe', border: '#bfdbfe' },
@@ -702,26 +697,37 @@ const semesterOptions = [
 
 const reverseSemesterMap = Object.entries(semesterMap).reduce((acc, [k, v]) => { acc[v] = k; return acc }, {})
 
-const mockCourses = [
-  { id: 101, name: '高等数学 I', code: 'MATH1001', semester: '1-1', type: '公必', teacher: '张老师', credit: 5.0, resources: 12, likes: 45 },
-  { id: 102, name: '程序设计基础', code: 'CS1001', semester: '1-1', type: '专必', teacher: '李老师', credit: 4.0, resources: 28, likes: 102 },
-  { id: 103, name: '思想道德修养', code: 'POLIO1001', semester: '1-1', type: '公必', teacher: '王老师', credit: 2.0, resources: 5, likes: 10 },
-  { id: 104, name: '当代文化研究', code: 'PUB1001', semester: '1-1', type: '公选', teacher: '张老师', credit: 2.0, resources: 5, likes: 80 },
-  { id: 201, name: '高等数学 II', code: 'MATH1002', semester: '1-2', type: '公必', teacher: '张老师', credit: 5.0, resources: 15, likes: 38 },
-  { id: 202, name: '线性代数', code: 'MATH1003', semester: '1-2', type: '公必', teacher: '赵老师', credit: 3.0, resources: 20, likes: 88 },
-  { id: 203, name: '离散数学', code: 'CS1002', semester: '1-2', type: '专必', teacher: '钱老师', credit: 4.0, resources: 35, likes: 150 },
-  { id: 204, name: '体育2', code: 'PE1002', semester: '1-2', type: '公必', teacher: '张老师', credit: 1.0, resources: 5, likes: 180 },
-  { id: 301, name: '数据结构与算法', code: 'CS2001', semester: '2-1', type: '专必', teacher: '孙老师', credit: 5, resources: 56, likes: 230 },
-  { id: 302, name: '计算机组成原理', code: 'CS2002', semester: '2-1', type: '专必', teacher: '周老师', credit: 4.0, resources: 30, likes: 95 },
-  { id: 303, name: 'Python应用开发', code: 'CS2005', semester: '2-1', type: '专选', teacher: '吴老师', credit: 2.0, resources: 18, likes: 67 },
-  { id: 401, name: '操作系统', code: 'CS2003', semester: '2-2', type: '专必', teacher: '郑老师', credit: 4.0, resources: 42, likes: 180 },
-  { id: 402, name: '计算机网络', code: 'CS2004', semester: '2-2', type: '专必', teacher: '冯老师', credit: 4.0, resources: 38, likes: 160 },
-  { id: 501, name: '计算机网络', code: 'CS3001', semester: '3-1', type: '专必', teacher: '马老师', credit: 3.0, resources: 18, likes: 120 },
-  { id: 502, name: '数据库系统概论', code: 'CS3002', semester: '3-1', type: '专必', teacher: '刘老师', credit: 3.5, resources: 25, likes: 140 },
-  { id: 601, name: '软件工程导论', code: 'CS3003', semester: '3-2', type: '专选', teacher: '毛老师', credit: 2.0, resources: 22, likes: 80 },
-  { id: 701, name: '人工智能导论', code: 'CS4001', semester: '4-1', type: '专选', teacher: '林老师', credit: 2.0, resources: 15, likes: 90 },
-  { id: 702, name: '毕业设计', code: 'CS4002', semester: '4-2', type: '专必', teacher: '何老师', credit: 6.0, resources: 10, likes: 50 }
-]
+// 获取数据函数
+const fetchCourseList = async () => {
+  isLoading.value = true
+  try {
+    const res = await HttpManager.getCourses()
+    // 假设后端返回的数据在 res.data 或 res 中（取决于 request.js 的封装）
+    // 这里做一个安全处理，如果是数组直接用，如果是对象取 data
+    const list = Array.isArray(res) ? res : (res.data || [])
+    
+    // 数据映射：确保后端字段与前端字段一致
+    // 如果后端返回的字段名完全一致，可以省略 map
+    rawCourseList.value = list.map(item => ({
+      id: item.id || item.courseId, // 兼容 id 或 courseId
+      name: item.name || item.courseName,
+      code: item.code || item.courseCode,
+      semester: item.semester, // 假设格式为 '1-1'
+      type: item.type || item.courseType, // 假设格式为 '公必' 等
+      teacher: item.teacher || item.teacherName,
+      credit: parseFloat(item.credit || 0),
+      resources: item.resources || item.resourceCount || 0,
+      likes: item.likes || item.likeCount || 0
+    }))
+  } catch (error) {
+    console.error('获取课程列表失败', error)
+    ElMessage.error('获取课程列表失败，请稍后重试')
+    // 失败时保持空列表
+    rawCourseList.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const groupedCourses = computed(() => {
   const order = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2']
@@ -750,7 +756,11 @@ const scrollToSemester = (val) => {
 
 watch(() => route.query.semester, (val) => val && scrollToSemester(val), { immediate: true })
 
-onMounted(() => document.addEventListener('click', closeDropdowns))
+onMounted(() => {
+  document.addEventListener('click', closeDropdowns)
+  fetchCourseList() // 初始化加载数据
+})
+
 onUnmounted(() => document.removeEventListener('click', closeDropdowns))
 </script>
 
@@ -892,6 +902,19 @@ onUnmounted(() => document.removeEventListener('click', closeDropdowns))
   font-size: 16px;
 }
 
+.btn-primary-outline {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid #0066ff;
+  color: #0066ff;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+.btn-primary-outline:hover {
+  background: #0066ff;
+  color: white;
+}
+
 .scroll-target { scroll-margin-top: 140px; }
 
 /* 动画定义 */
@@ -907,5 +930,15 @@ onUnmounted(() => document.removeEventListener('click', closeDropdowns))
 
 .animate-slide-down {
   animation: slideDown 0.3s ease-out;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
