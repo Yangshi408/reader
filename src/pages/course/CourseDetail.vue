@@ -19,7 +19,7 @@
         >
           <div class="w-full aspect-[4/3] rounded-xl overflow-hidden shadow-md border border-gray-100 relative group">
             <img
-              :src="courseInfo.cover"
+              :src="courseInfo.cover || 'https://via.placeholder.com/300x400?text=Course'"
               alt="Course Cover"
               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             >
@@ -74,7 +74,7 @@
               课程简介
             </h3>
             <p class="text-gray-600 leading-7 text-justify whitespace-pre-line text-sm md:text-base">
-              {{ courseInfo.description }}
+              {{ courseInfo.description || '暂无简介' }}
             </p>
           </div>
         </div>
@@ -84,7 +84,7 @@
     <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-sm border border-white/50">
       <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
-          相关资料
+          相关资源链接
         </h2>
         <button
           class="group relative overflow-hidden px-6 py-2.5 bg-white text-blue-600 text-sm font-bold rounded-full shadow-lg shadow-blue-500/10 border border-blue-100 hover:border-blue-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-300"
@@ -96,106 +96,119 @@
 
           <div class="relative z-10 flex items-center gap-2">
             <i
-              class="fas fa-cloud-upload-alt text-lg group-hover:-translate-y-1 group-hover:scale-110 transform transition-transform duration-300 ease-out"
+              class="fas fa-link text-lg group-hover:-translate-y-1 group-hover:scale-110 transform transition-transform duration-300 ease-out"
             ></i>
-            <span class="tracking-wide">资料上传</span>
+            <span class="tracking-wide">分享链接</span>
           </div>
         </button>
       </div>
 
       <div class="space-y-8">
-        <div>
+        <div v-if="resources.docs.length > 0">
           <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
               <i class="fas fa-book"></i>
             </span>
-            书籍文档
+            书籍文档 / 网盘
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div
-              v-for="book in resources.docs"
-              :key="book.id"
+              v-for="item in resources.docs"
+              :key="item.id"
               class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md bg-white hover:bg-blue-50/10 transition-all duration-300 cursor-pointer group"
+              @click="openLink(item.url)"
             >
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                  <i class="far fa-file-pdf text-red-500 text-lg"></i>
+                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                  <i class="fas fa-link text-blue-500 text-lg"></i>
                 </div>
                 <div class="min-w-0">
                   <div class="text-gray-700 font-medium group-hover:text-blue-700 text-sm truncate transition-colors">
-                    {{ book.title }}
+                    {{ item.title }}
                   </div>
-                  <div class="text-xs text-gray-400 mt-0.5">
-                    {{ book.size }}
+                  <div class="text-xs text-gray-400 mt-0.5 truncate pr-2">
+                    {{ item.url }}
                   </div>
                 </div>
               </div>
               <button class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0">
-                <i class="fas fa-download text-sm"></i>
+                <i class="fas fa-external-link-alt text-sm"></i>
               </button>
             </div>
           </div>
         </div>
 
-        <div>
+        <div v-if="resources.videos.length > 0">
           <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm border border-purple-100">
               <i class="fas fa-video"></i>
             </span>
-            视频网课
+            视频网课链接
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div
-              v-for="video in resources.videos"
-              :key="video.id"
+              v-for="item in resources.videos"
+              :key="item.id"
               class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-md bg-white hover:bg-purple-50/10 transition-all duration-300 cursor-pointer group"
+              @click="openLink(item.url)"
             >
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                  <i class="fab fa-youtube text-red-500 text-lg"></i>
+                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                  <i class="fas fa-play-circle text-purple-500 text-lg"></i>
                 </div>
                 <div class="min-w-0">
                   <div class="text-gray-700 font-medium group-hover:text-purple-700 text-sm truncate transition-colors">
-                    {{ video.title }}
+                    {{ item.title }}
                   </div>
-                  <div class="text-xs text-gray-400 mt-0.5">
-                    {{ video.source }}
+                  <div class="text-xs text-gray-400 mt-0.5 truncate pr-2">
+                    {{ item.url }}
                   </div>
                 </div>
               </div>
-              <i class="fas fa-external-link-alt text-xs text-gray-300 group-hover:text-purple-500 transition-colors shrink-0"></i>
+              <button class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-all shrink-0">
+                <i class="fas fa-external-link-alt text-sm"></i>
+              </button>
             </div>
           </div>
         </div>
 
-        <div>
+        <div v-if="resources.tools.length > 0">
           <h3 class="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-sm border border-green-100">
               <i class="fas fa-tools"></i>
             </span>
-            相关工具
+            相关工具 / 网址
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div
-              v-for="tool in resources.tools"
-              :key="tool.id"
+              v-for="item in resources.tools"
+              :key="item.id"
               class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md bg-white hover:bg-green-50/10 transition-all duration-300 cursor-pointer group"
+              @click="openLink(item.url)"
             >
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
-                  <i class="fas fa-cube text-gray-500 text-lg"></i>
+                <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0 border border-green-100">
+                  <i class="fas fa-globe text-green-500 text-lg"></i>
                 </div>
                 <div class="min-w-0">
                   <div class="text-gray-700 font-medium group-hover:text-green-700 text-sm truncate transition-colors">
-                    {{ tool.name }}
+                    {{ item.title }}
+                  </div>
+                  <div class="text-xs text-gray-400 mt-0.5 truncate pr-2">
+                    {{ item.url }}
                   </div>
                 </div>
               </div>
-              <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-md border border-green-100 shrink-0 font-medium">
-                {{ tool.tag }}
-              </span>
+              <button class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-green-600 hover:bg-green-50 transition-all shrink-0">
+                <i class="fas fa-external-link-alt text-sm"></i>
+              </button>
             </div>
           </div>
+        </div>
+        
+        <div v-if="!resources.docs.length && !resources.videos.length && !resources.tools.length" class="text-center py-8 text-gray-400">
+             <i class="fas fa-link text-2xl mb-2 opacity-30"></i>
+             <p class="text-sm">暂无相关资源链接</p>
         </div>
       </div>
     </div>
@@ -360,12 +373,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
+import { HttpManager } from '@/api/index'
 
 const router = useRouter()
 const route = useRoute()
 const store = useStore()
 
-// 1. 用户状态
+// 用户状态
 const isAuthenticated = computed(() => store.getters.isLoggedIn)
 const userInfo = computed(() => store.getters.userInfo)
 
@@ -373,55 +387,105 @@ const goToLogin = () => {
   router.push({ name: 'Login', query: { redirect: route.fullPath } })
 }
 
-// 2. 状态管理
+// 状态
 const isLiked = ref(false)
 const sortType = ref('hot')
 const newComment = ref('')
-
-// 分页状态 (新增)
 const currentPage = ref(1)
 const pageSize = 5
 
-// 3. Mock 数据
+// 数据容器
 const courseInfo = ref({
-  name: '面向对象程序设计',
-  teacher: '张伟',
-  semester: '大二上学期',
-  credit: '4.0',
-  cover: 'https://placehold.co/600x450/3b82f6/ffffff?text=C%2B%2B',
-  description: '本课程旨在深入讲解面向对象编程（OOP）的核心思想。通过 C++ 语言，学生将学习封装、继承、多态三大特性，并掌握 STL 标准模板库的使用。\n\n课程难点在于虚函数表的理解以及内存管理。建议同学们提前预习指针相关知识，并在实验课中多动手调试代码。'
+  id: '',
+  name: '',
+  teacher: '',
+  semester: '',
+  credit: '',
+  cover: '',
+  description: ''
 })
 
 const resources = ref({
-  docs: [
-    { id: 1, title: 'C++ Primer Plus 重点章节笔记.pdf', size: '12MB' },
-    { id: 2, title: '2023年期末考试押题卷.pdf', size: '2.4MB' },
-    { id: 3, title: '实验报告通用模版.docx', size: '0.5MB' }
-  ],
-  videos: [
-    { id: 101, title: 'B站 - 侯捷 C++内存管理', source: '哔哩哔哩', url: '#' },
-    { id: 102, title: 'MOOC - 程序设计基础进阶', source: '中国大学MOOC', url: '#' }
-  ],
-  tools: [
-    { id: 201, name: 'Visual Studio Code', tag: '编辑器' },
-    { id: 202, name: 'CLion (JetBrains)', tag: 'IDE' }
-  ]
+  docs: [],
+  videos: [],
+  tools: []
 })
 
-// 增加 Mock 评论以展示分页效果
-const comments = ref([
-  { id: 1, user: '秃头学长', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', time: '2023-12-20', content: '这门课的作业量真的很大！建议大家从期中就开始构思大作业。', likes: 124, isLiked: false },
-  { id: 2, user: '萌新小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', time: '2024-01-05', content: '求问各位学长学姐，期末考试重点考不考 STL 源码分析呀？', likes: 5, isLiked: false },
-  { id: 3, user: 'CodeMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', time: '2023-11-15', content: '推荐大家去看《Effective C++》，配合这门课食用效果更佳。', likes: 45, isLiked: true },
-  { id: 4, user: '路人甲', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack', time: '2023-10-01', content: '老师讲得很好，但是语速有点快，建议录音回去复习。', likes: 12, isLiked: false },
-  { id: 5, user: 'C++之神', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=God', time: '2023-09-20', content: '其实这门课只要掌握了多态的底层原理，其他都很简单。', likes: 88, isLiked: false },
-  { id: 6, user: '补考战士', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cry', time: '2024-02-10', content: '我又来重修了...大家一定要好好做实验啊！', likes: 2, isLiked: false },
-  { id: 7, user: '学霸君', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Smart', time: '2023-12-30', content: '期末复习资料我已经上传到资源区了，大家自取。', likes: 200, isLiked: true },
-  { id: 8, user: '潜水员', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Fish', time: '2023-11-05', content: '冒个泡，这门课给分怎么样？', likes: 0, isLiked: false }
-])
+const comments = ref([])
 
-// 4. 计算属性
-// 先排序
+// 4. 数据获取逻辑
+const fetchData = async () => {
+  const courseId = route.params.id
+  if (!courseId) {
+    ElMessage.error('参数错误：缺少课程ID')
+    return
+  }
+
+  try {
+    // 4.1 获取详情
+    const detailRes = await HttpManager.getCourseDetail(courseId).catch(() => null)
+    if (detailRes && (detailRes.data || detailRes.id)) {
+      const d = detailRes.data || detailRes
+      courseInfo.value = {
+        id: d.id,
+        name: d.name || d.courseName,
+        teacher: d.teacher,
+        semester: d.semester,
+        credit: d.credit,
+        cover: d.cover || 'https://via.placeholder.com/600x450/3b82f6/ffffff?text=Course',
+        description: d.description || d.intro || '暂无简介',
+        isLiked: d.isLiked || false
+      }
+      isLiked.value = !!d.isLiked
+    }
+
+    // 4.2 获取资源并分类 (重点修改部分)
+    const resRes = await HttpManager.getCourseResources(courseId).catch(() => [])
+    const resList = Array.isArray(resRes) ? resRes : (resRes.data || [])
+    
+    // 重置资源
+    resources.value = { docs: [], videos: [], tools: [] }
+
+    resList.forEach(item => {
+      // 核心修改：只关注 type，不关注后缀
+      const type = (item.type || 'tool').toLowerCase()
+      
+      const resItem = {
+        id: item.id,
+        title: item.name || item.title || '未命名资源',
+        url: item.url || item.link || '', // 确保有 URL
+        // 移除 size，改用链接展示
+      }
+
+      if (type === 'video') {
+        resources.value.videos.push(resItem)
+      } else if (type === 'doc') {
+        resources.value.docs.push(resItem)
+      } else {
+        resources.value.tools.push(resItem)
+      }
+    })
+
+    // 4.3 获取评论
+    const comRes = await HttpManager.getCourseComments(courseId).catch(() => [])
+    const comList = Array.isArray(comRes) ? comRes : (comRes.data || [])
+    comments.value = comList.map(item => ({
+      id: item.id,
+      user: item.user_name || item.userName || '用户',
+      avatar: item.user_avatar || item.userAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
+      time: item.create_time ? new Date(item.create_time).toLocaleDateString() : '最近',
+      content: item.content,
+      likes: item.likes || 0,
+      isLiked: item.isLiked || false
+    }))
+
+  } catch (error) {
+    console.error('Fetch Data Error:', error)
+    ElMessage.error('加载数据失败，请刷新重试')
+  }
+}
+
+// 5. 计算属性
 const sortedAllComments = computed(() => {
   const list = [...comments.value]
   if (sortType.value === 'hot') {
@@ -431,8 +495,7 @@ const sortedAllComments = computed(() => {
   }
 })
 
-// 再分页 (新增)
-const totalPages = computed(() => Math.ceil(sortedAllComments.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(sortedAllComments.value.length / pageSize) || 1)
 
 const paginatedComments = computed(() => {
   const start = (currentPage.value - 1) * pageSize
@@ -440,17 +503,16 @@ const paginatedComments = computed(() => {
   return sortedAllComments.value.slice(start, end)
 })
 
-// 5. 方法
+// 6. 方法
 const changePage = (page) => {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
-  // 切换页面时，平滑滚动到评论列表顶部
-  // 实际使用时可以定位到 id="comment-list-top"
+  document.getElementById('comment-list-top')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 const changeSort = (type) => {
   sortType.value = type
-  currentPage.value = 1 // 切换排序重置页码
+  currentPage.value = 1
 }
 
 const goBack = () => {
@@ -462,88 +524,100 @@ const goBack = () => {
 }
 
 const toggleLike = async () => {
-  if (!isAuthenticated.value) {
-    try {
-      await ElMessageBox.confirm('请先登录以收藏课程', '提示', {
-        confirmButtonText: '去登录',
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-      await router.push('/')
-    } catch {
-      // 用户点击取消
+  if (!isAuthenticated.value) return ElMessage.warning('请先登录')
+  try {
+    await HttpManager.toggleCourseLike(courseInfo.value.id)
+    isLiked.value = !isLiked.value
+    if (isLiked.value) {
+      ElMessage.success('课程已加入收藏夹')
+    } else {
+      ElMessage.info('已取消收藏')
     }
-    return
-  }
-
-  isLiked.value = !isLiked.value
-  if (isLiked.value) {
-    ElMessage.success('课程已加入收藏夹')
-    // 这里可以调用 API 添加收藏
-  } else {
-    ElMessage.info('已取消收藏')
-    // 这里可以调用 API 移除收藏
+  } catch (error) {
+    ElMessage.error('操作失败')
   }
 }
 
-const likeComment = (id) => {
+const likeComment = async (commentId) => {
   if (!isAuthenticated.value) {
-    ElMessage.warning('请先登录以点赞评论')
+    ElMessage.warning('请先登录')
     return
   }
+  const comment = comments.value.find(c => c.id === commentId)
+  if (!comment) return
+  const originalLiked = comment.isLiked
+  const originalLikes = comment.likes
+  if (comment.isLiked) {
+    comment.likes--
+    comment.isLiked = false
+  } else {
+    comment.likes++
+    comment.isLiked = true
+  }
+  try {
+    await HttpManager.toggleCourseCommentLike(courseInfo.value.id, commentId)
+  } catch (error) {
+    comment.likes = originalLikes
+    comment.isLiked = originalLiked
+    ElMessage.error('操作失败')
+  }
+}
 
-  const comment = comments.value.find(c => c.id === id)
-  if (comment) {
-    if (comment.isLiked) {
-      comment.likes--
-      comment.isLiked = false
-    } else {
-      comment.likes++
-      comment.isLiked = true
-    }
+// 修改：打开链接方法
+const openLink = (url) => {
+  if (url) {
+    window.open(url, '_blank')
+  } else {
+    ElMessage.info('暂无链接')
   }
 }
 
 const goToUpload = () => {
-  const currentCourseId = '123'
   router.push({
     name: 'CourseSubmit',
     query: {
-      courseId: currentCourseId,
+      courseId: courseInfo.value.id || route.params.id,
       courseName: courseInfo.value.name
     }
   })
 }
 
-const submitComment = () => {
+const submitComment = async () => {
   if (!isAuthenticated.value) {
     ElMessage.warning('请先登录')
     return
   }
-  
   if (!newComment.value.trim()) {
     ElMessage.warning('请输入评论内容')
     return
   }
-
-  const mockNewComment = {
-    id: Date.now(),
-    user: userInfo.value.nickname || userInfo.value.username || '我',
-    avatar: userInfo.value.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
-    time: new Date().toLocaleDateString(),
-    content: newComment.value,
-    likes: 0,
-    isLiked: false
+  try {
+    await HttpManager.addCourseComment(courseInfo.value.id || route.params.id, {
+      content: newComment.value
+    })
+    ElMessage.success('评论发布成功！')
+    newComment.value = ''
+    currentPage.value = 1
+    const comRes = await HttpManager.getCourseComments(courseInfo.value.id || route.params.id)
+    const comList = Array.isArray(comRes) ? comRes : (comRes.data || [])
+    comments.value = comList.map(item => ({
+      id: item.id,
+      user: item.user_name || item.userName || userInfo.value.nickname,
+      avatar: item.user_avatar || item.userAvatar || userInfo.value.avatar,
+      time: '刚刚',
+      content: item.content,
+      likes: 0,
+      isLiked: false
+    }))
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('评论发布失败')
   }
-
-  comments.value.unshift(mockNewComment)
-  newComment.value = ''
-  currentPage.value = 1 // 发布评论后跳回第一页
-  ElMessage.success('评论发布成功！')
 }
 
 onMounted(() => {
   window.scrollTo(0, 0)
+  fetchData()
 })
 </script>
 

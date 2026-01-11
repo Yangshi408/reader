@@ -19,124 +19,66 @@
         <p class="text-gray-500 text-sm mb-8">感谢您的贡献！您的分享将帮助更多同学掌握这门课程。</p>
 
         <form @submit.prevent="handleSubmit" class="space-y-8">
-          <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex items-start gap-4">
-            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-              <i class="fas fa-book-open"></i>
-            </div>
-            <div>
-              <div class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">关联课程</div>
-              <div class="text-gray-800 font-bold text-lg">{{ formData.courseName }}</div>
-              <div class="text-xs text-gray-400 mt-1">课程ID: {{ formData.courseId }}</div>
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">所属课程</label>
+            <div class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 text-sm flex items-center gap-2">
+              <i class="fas fa-book-open text-blue-500"></i>
+              {{ formData.courseName || '未指定课程' }}
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-3">资料类型 <span class="text-red-500">*</span></label>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="block text-sm font-bold text-gray-700 mb-2">资源类型</label>
+            <div class="grid grid-cols-3 gap-4">
               <div
-                @click="formData.type = 'doc'"
-                class="cursor-pointer rounded-xl p-4 border transition-all duration-300 flex items-center gap-3"
-                :class="[
-                  formData.type === 'doc'
-                    ? 'bg-blue-50 border-blue-200 shadow-inner'
-                    : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md'
-                ]"
+                v-for="type in resourceTypes"
+                :key="type.value"
+                @click="formData.type = type.value"
+                class="cursor-pointer border rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200"
+                :class="formData.type === type.value ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'"
               >
-                <div
-                  class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-                  :class="formData.type === 'doc' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'"
-                >
-                  <i class="fas fa-file-pdf"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-sm" :class="formData.type === 'doc' ? 'text-blue-700' : 'text-gray-600'">书籍文档</div>
-                  <div class="text-xs text-gray-400">PDF, PPT, Word 等</div>
-                </div>
-              </div>
-
-              <div
-                @click="formData.type = 'video'"
-                class="cursor-pointer rounded-xl p-4 border transition-all duration-300 flex items-center gap-3"
-                :class="[
-                  formData.type === 'video'
-                    ? 'bg-red-50 border-red-200 shadow-inner'
-                    : 'bg-white border-gray-100 hover:border-red-200 hover:shadow-md'
-                ]"
-              >
-                <div
-                  class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-                  :class="formData.type === 'video' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'"
-                >
-                  <i class="fas fa-play-circle"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-sm" :class="formData.type === 'video' ? 'text-red-700' : 'text-gray-600'">视频网课</div>
-                  <div class="text-xs text-gray-400">B站, MOOC, YouTube</div>
-                </div>
-              </div>
-
-              <div
-                @click="formData.type = 'tool'"
-                class="cursor-pointer rounded-xl p-4 border transition-all duration-300 flex items-center gap-3"
-                :class="[
-                  formData.type === 'tool'
-                    ? 'bg-green-50 border-green-200 shadow-inner'
-                    : 'bg-white border-gray-100 hover:border-green-200 hover:shadow-md'
-                ]"
-              >
-                <div
-                  class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-                  :class="formData.type === 'tool' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'"
-                >
-                  <i class="fas fa-tools"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-sm" :class="formData.type === 'tool' ? 'text-green-700' : 'text-gray-600'">相关工具</div>
-                  <div class="text-xs text-gray-400">IDE, 编译器, 辅助软件</div>
-                </div>
+                <i :class="[type.icon, 'text-xl']"></i>
+                <span class="text-sm font-medium">{{ type.label }}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">资源链接 <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-bold text-gray-700 mb-2">资源链接 / 网盘地址</label>
             <div class="relative">
+              <i class="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
               <input
                 v-model="formData.link"
                 type="text"
-                placeholder="   https://..."
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50/30 focus:bg-white"
+                placeholder="请输入 http:// 或 https:// 开头的链接"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm"
               >
-              <i class="fas fa-link absolute left-4 top-4 text-gray-500"></i>
             </div>
-            <p class="text-xs text-gray-400 mt-1.5 ml-1">请确保链接公开可访问，推荐使用网盘分享链接或官方地址。</p>
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">简单描述</label>
+            <label class="block text-sm font-bold text-gray-700 mb-2">资源描述</label>
             <textarea
               v-model="formData.description"
               rows="4"
-              placeholder="请简单介绍这份资料的内容..."
-              class="w-full p-4 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50/30 focus:bg-white resize-none"
+              placeholder="请简要描述资源内容，如：20xx期末复习重点、算法PPT等..."
+              class="w-full p-4 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm resize-none"
             ></textarea>
           </div>
 
-          <div class="pt-4 flex items-center justify-end gap-4">
-            <div style="width: 70%;"></div>
+          <div class="pt-4 flex gap-4">
             <button
               type="submit"
               :disabled="isSubmitting"
-              class="px-6 py-4 rounded-xl text-blue-500 font-bold hover:bg-blue-100 hover:text-blue-700 transition-colors"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
             >
-              <i v-if="isSubmitting" class="fas fa-circle-notch fa-spin"></i>
-              <span v-else>确认提交</span>
+              <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
+              {{ isSubmitting ? '提交中...' : '确认提交' }}
             </button>
-
             <button
               type="button"
               @click="goBack"
-              class="px-6 py-4 rounded-xl text-gray-500 font-bold hover:bg-gray-200 hover:text-gray-700 transition-colors"
+              class="px-8 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3.5 rounded-xl transition-all"
             >
               取消
             </button>
@@ -148,17 +90,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useStore } from 'vuex'  // 添加 Vuex
 import { ElMessage } from 'element-plus'
+import { HttpManager } from '@/api/index'
 
 const router = useRouter()
 const route = useRoute()
-const store = useStore()  // 添加 Vuex store
 const isSubmitting = ref(false)
-
-const isAuthenticated = computed(() => store.getters.isLoggedIn)
 
 const formData = reactive({
   courseName: '',
@@ -168,24 +107,20 @@ const formData = reactive({
   description: ''
 })
 
-onMounted(() => {
-  // 检查用户是否登录
-  if (!isAuthenticated.value) {
-    ElMessage.warning('请先登录以上传资料')
-    router.push('/login')
-    return
-  }
+const resourceTypes = [
+  { label: '文档资料', value: 'doc', icon: 'far fa-file-alt' },
+  { label: '视频网课', value: 'video', icon: 'fas fa-video' },
+  { label: '辅助工具', value: 'tool', icon: 'fas fa-tools' }
+]
 
+onMounted(() => {
   const { courseName, courseId } = route.query
-  if (courseName) {
-    formData.courseName = courseName
-    formData.courseId = courseId || '000000'
+  // 仅当有参数时才填充
+  if (courseId) {
+    formData.courseName = courseName || '未知课程'
+    formData.courseId = courseId
   } else {
-    // 允许测试时直接访问
-    if (!formData.courseName) {
-      formData.courseName = '测试课程'
-      formData.courseId = 'TEST-001'
-    }
+    ElMessage.warning('参数缺失：未指定课程')
   }
 })
 
@@ -193,37 +128,51 @@ const goBack = () => {
   router.back()
 }
 
-const handleSubmit = () => {
-  if (!isAuthenticated.value) {
-    ElMessage.error('请先登录')
+// 提交
+const handleSubmit = async () => {
+  if (!formData.courseId) {
+    ElMessage.error('无法提交：缺失课程ID')
     return
   }
-
   if (!formData.link) {
     ElMessage.error('请输入资源链接')
     return
   }
-
+  
   isSubmitting.value = true
-  setTimeout(() => {
-    isSubmitting.value = false
-    ElMessage.success({
-      message: '提交成功！审核通过后将展示在列表页',
-      type: 'success',
-      duration: 2000
+  
+  try {
+    // 调用接口
+    await HttpManager.addCourseResource({
+      courseId: formData.courseId,
+      type: formData.type,
+      url: formData.link, // 前端是 link，后端通常叫 url
+      description: formData.description,
+      // 如果后端必填 name，可以用描述的前20个字代替，或者前端增加 name 输入框
+      name: formData.description ? formData.description.slice(0, 20) : '新分享资源'
     })
+
+    ElMessage.success('提交成功，感谢您的分享！')
+    
+    // 延迟跳转，提升体验
     setTimeout(() => {
       goBack()
     }, 1000)
-  }, 1000)
+    
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('提交失败，请稍后重试')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
-<style lang="scss" scoped>
-@import '@/assets/css/index';
+<style scoped>
+@import '@/assets/css/index.css';
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }
 
 @keyframes fadeIn {
